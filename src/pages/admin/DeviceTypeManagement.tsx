@@ -1,0 +1,734 @@
+import { useState, useEffect } from 'react';
+import { Plus, Trash2, AlertCircle, Eye, Upload, PlusCircle, Database, Search, Edit, ArrowLeft } from 'lucide-react';
+import { Button } from '../../components/ui/button';
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-hot-toast';
+import { DeviceType } from '../../types';
+import { Input } from '../../components/ui/input';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table';
+import { useToast } from '../../hooks/use-toast';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../../components/ui/alert-dialog';
+import Breadcrumb from '../../components/ui/breadcrumb';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "../../components/ui/dialog";
+import { Label } from '../../components/ui/label';
+import { Textarea } from '../../components/ui/textarea';
+
+// Interface for form data
+interface DeviceTypeFormData {
+  name: string;
+  code: string;
+  manufacturer?: string;
+  countryOfOrigin?: string;
+  yearOfManufacturing?: string;
+  validity?: string;
+  parameters?: string;
+  remarks?: string;
+  manualUrl?: string;
+  videoUrl?: string;
+}
+
+const DeviceTypeManagement = () => {
+  const navigate = useNavigate();
+  const { toast: showToast } = useToast();
+  
+  // State
+  const [deviceTypes, setDeviceTypes] = useState<DeviceType[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [selectedDeviceType, setSelectedDeviceType] = useState<DeviceType | null>(null);
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const [deviceToDelete, setDeviceToDelete] = useState<DeviceType | null>(null);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [deviceToView, setDeviceToView] = useState<DeviceType | null>(null);
+  const [filteredDeviceTypes, setFilteredDeviceTypes] = useState<DeviceType[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  
+  // Form state
+  const [formData, setFormData] = useState<DeviceTypeFormData>({
+    name: '',
+    code: '',
+    manufacturer: '',
+    countryOfOrigin: '',
+    yearOfManufacturing: '',
+    validity: '',
+    parameters: '',
+    remarks: '',
+    manualUrl: '',
+    videoUrl: ''
+  });
+
+  const breadcrumbItems = [
+    { title: 'Dashboard', path: '/admin' },
+    { title: 'Device Type Management', path: '/admin/device-type-management' }
+  ];
+
+  // Load device types from localStorage
+  useEffect(() => {
+    const loadDeviceTypes = () => {
+      setLoading(true);
+      setError(null);
+      
+      try {
+        const deviceTypesData = localStorage.getItem('deviceTypes');
+        
+        if (deviceTypesData) {
+          const parsedDeviceTypes: DeviceType[] = JSON.parse(deviceTypesData);
+          console.log('Loaded device types:', parsedDeviceTypes);
+          setDeviceTypes(parsedDeviceTypes);
+          setFilteredDeviceTypes(parsedDeviceTypes);
+        } else {
+          console.log('No device types found in localStorage');
+          setDeviceTypes([]);
+          setFilteredDeviceTypes([]);
+          
+          // Initialize with mock data if not found
+          const { deviceTypes: mockDeviceTypes } = require('../../data/mockData');
+          localStorage.setItem('deviceTypes', JSON.stringify(mockDeviceTypes));
+          setDeviceTypes(mockDeviceTypes);
+          setFilteredDeviceTypes(mockDeviceTypes);
+        }
+      } catch (err) {
+        console.error('Error loading device types:', err);
+        setError('Failed to load device types. Please try again.');
+        showToast({
+          title: 'Error',
+          description: 'Failed to load device types',
+          variant: 'destructive',
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadDeviceTypes();
+  }, [showToast]);
+  
+  // Filter device types based on search query
+  useEffect(() => {
+    if (searchQuery.trim() === '') {
+      setFilteredDeviceTypes(deviceTypes);
+    } else {
+      const query = searchQuery.toLowerCase();
+      const filtered = deviceTypes.filter(
+        deviceType => 
+          deviceType.name.toLowerCase().includes(query) ||
+          deviceType.code.toLowerCase().includes(query) ||
+          (deviceType.manufacturer && deviceType.manufacturer.toLowerCase().includes(query))
+      );
+      setFilteredDeviceTypes(filtered);
+    }
+  }, [searchQuery, deviceTypes]);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const resetForm = () => {
+    setFormData({
+      name: '',
+      code: '',
+      manufacturer: '',
+      countryOfOrigin: '',
+      yearOfManufacturing: '',
+      validity: '',
+      parameters: '',
+      remarks: '',
+      manualUrl: '',
+      videoUrl: ''
+    });
+  };
+
+  const handleAddDeviceType = () => {
+    try {
+      // Validate required fields
+      if (!formData.name || !formData.code) {
+        showToast({
+          title: 'Error',
+          description: 'Name and code are required fields',
+          variant: 'destructive',
+        });
+        return;
+      }
+      
+      // Check if code already exists
+      if (deviceTypes.some(dt => dt.code === formData.code)) {
+        showToast({
+          title: 'Error',
+          description: 'A device type with this code already exists',
+          variant: 'destructive',
+        });
+        return;
+      }
+      
+      // Create new device type
+      const newDeviceType: DeviceType = {
+        id: `DT${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`,
+        name: formData.name,
+        code: formData.code,
+        manufacturer: formData.manufacturer,
+        countryOfOrigin: formData.countryOfOrigin,
+        yearOfManufacturing: formData.yearOfManufacturing,
+        validity: formData.validity,
+        parameters: formData.parameters,
+        remarks: formData.remarks,
+        manualUrl: formData.manualUrl,
+        videoUrl: formData.videoUrl
+      };
+      
+      // Update state and localStorage
+      const updatedDeviceTypes = [...deviceTypes, newDeviceType];
+      setDeviceTypes(updatedDeviceTypes);
+      localStorage.setItem('deviceTypes', JSON.stringify(updatedDeviceTypes));
+      
+      // Show success message
+      showToast({
+        title: 'Success',
+        description: 'Device type added successfully',
+      });
+      
+      // Close modal and reset form
+      setIsModalOpen(false);
+      resetForm();
+    } catch (error) {
+      console.error('Error adding device type:', error);
+      showToast({
+        title: 'Error',
+        description: 'Failed to add device type',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleEditDeviceType = (deviceType: DeviceType) => {
+    setSelectedDeviceType(deviceType);
+    setFormData({
+      name: deviceType.name,
+      code: deviceType.code,
+      manufacturer: deviceType.manufacturer || '',
+      countryOfOrigin: deviceType.countryOfOrigin || '',
+      yearOfManufacturing: deviceType.yearOfManufacturing || '',
+      validity: deviceType.validity || '',
+      parameters: deviceType.parameters || '',
+      remarks: deviceType.remarks || '',
+      manualUrl: deviceType.manualUrl || '',
+      videoUrl: deviceType.videoUrl || ''
+    });
+    setIsEditMode(true);
+    setIsModalOpen(true);
+  };
+
+  const handleUpdateDeviceType = () => {
+    try {
+      if (!selectedDeviceType) return;
+      
+      // Validate required fields
+      if (!formData.name || !formData.code) {
+        showToast({
+          title: 'Error',
+          description: 'Name and code are required fields',
+          variant: 'destructive',
+        });
+        return;
+      }
+      
+      // Check if code already exists (excluding the current device type)
+      if (deviceTypes.some(dt => dt.code === formData.code && dt.id !== selectedDeviceType.id)) {
+        showToast({
+          title: 'Error',
+          description: 'A device type with this code already exists',
+          variant: 'destructive',
+        });
+        return;
+      }
+      
+      // Update device type
+      const updatedDeviceTypes = deviceTypes.map(dt => 
+        dt.id === selectedDeviceType.id
+          ? {
+              ...dt,
+              name: formData.name,
+              code: formData.code,
+              manufacturer: formData.manufacturer,
+              countryOfOrigin: formData.countryOfOrigin,
+              yearOfManufacturing: formData.yearOfManufacturing,
+              validity: formData.validity,
+              parameters: formData.parameters,
+              remarks: formData.remarks,
+              manualUrl: formData.manualUrl,
+              videoUrl: formData.videoUrl
+            }
+          : dt
+      );
+      
+      // Update state and localStorage
+      setDeviceTypes(updatedDeviceTypes);
+      localStorage.setItem('deviceTypes', JSON.stringify(updatedDeviceTypes));
+      
+      // Show success message
+      showToast({
+        title: 'Success',
+        description: 'Device type updated successfully',
+      });
+      
+      // Close modal and reset form
+      setIsModalOpen(false);
+      setIsEditMode(false);
+      setSelectedDeviceType(null);
+      resetForm();
+    } catch (error) {
+      console.error('Error updating device type:', error);
+      showToast({
+        title: 'Error',
+        description: 'Failed to update device type',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const openDeleteConfirm = (deviceType: DeviceType) => {
+    setDeviceToDelete(deviceType);
+    setIsDeleteConfirmOpen(true);
+  };
+
+  const handleDeleteDeviceType = () => {
+    try {
+      if (!deviceToDelete) return;
+      
+      // Delete device type
+      const updatedDeviceTypes = deviceTypes.filter(dt => dt.id !== deviceToDelete.id);
+      
+      // Update state and localStorage
+      setDeviceTypes(updatedDeviceTypes);
+      localStorage.setItem('deviceTypes', JSON.stringify(updatedDeviceTypes));
+      
+      // Show success message
+      showToast({
+        title: 'Success',
+        description: 'Device type deleted successfully',
+      });
+      
+      // Close dialog
+      setIsDeleteConfirmOpen(false);
+      setDeviceToDelete(null);
+    } catch (error) {
+      console.error('Error deleting device type:', error);
+      showToast({
+        title: 'Error',
+        description: 'Failed to delete device type',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleViewDeviceType = (deviceType: DeviceType) => {
+    setDeviceToView(deviceType);
+    setIsViewModalOpen(true);
+  };
+
+  const handleManageDevices = (deviceType: DeviceType) => {
+    navigate(`/admin/device-management/${deviceType.id}`);
+  };
+
+  const handleBackToAdmin = () => {
+    navigate('/admin');
+  };
+
+  return (
+    <div className="container p-6 mx-auto">
+      <Breadcrumb items={breadcrumbItems} className="mb-4" />
+      
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="mb-2"
+              onClick={handleBackToAdmin}
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" /> Back to Dashboard
+            </Button>
+            <CardTitle className="text-2xl">Device Type Management</CardTitle>
+            <CardDescription>
+              Manage device types in the system
+            </CardDescription>
+          </div>
+          <Button onClick={() => {
+            setIsEditMode(false);
+            resetForm();
+            setIsModalOpen(true);
+          }}>
+            <Plus className="w-4 h-4 mr-2" /> Add Device Type
+          </Button>
+        </CardHeader>
+        <CardContent>
+          <div className="relative mb-4">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              type="search"
+              placeholder="Search device types..."
+              className="pl-8"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+          
+          {loading ? (
+            <div className="flex items-center justify-center h-64">
+              <div className="w-8 h-8 border-b-2 border-gray-900 rounded-full animate-spin"></div>
+            </div>
+          ) : error ? (
+            <div className="flex items-start p-4 mb-4 rounded-md bg-red-50">
+              <AlertCircle className="h-5 w-5 text-red-500 mr-2 mt-0.5" />
+              <div>
+                <h3 className="text-sm font-medium text-red-800">Error</h3>
+                <p className="mt-1 text-sm text-red-700">{error}</p>
+              </div>
+            </div>
+          ) : filteredDeviceTypes.length === 0 ? (
+            <div className="py-10 text-center">
+              <Database className="w-10 h-10 mx-auto mb-4 text-gray-400" />
+              <h3 className="text-lg font-medium text-gray-900">No device types found</h3>
+              <p className="mt-1 text-sm text-gray-500">
+                Get started by creating a new device type.
+              </p>
+              <div className="mt-6">
+                <Button onClick={() => {
+                  setIsEditMode(false);
+                  resetForm();
+                  setIsModalOpen(true);
+                }}>
+                  <PlusCircle className="w-4 h-4 mr-2" />
+                  Add Device Type
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="border rounded-md">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Code</TableHead>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Manufacturer</TableHead>
+                    <TableHead>Validity</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredDeviceTypes.map((deviceType) => (
+                    <TableRow key={deviceType.id}>
+                      <TableCell className="font-medium">{deviceType.code}</TableCell>
+                      <TableCell>{deviceType.name}</TableCell>
+                      <TableCell>{deviceType.manufacturer || 'N/A'}</TableCell>
+                      <TableCell>{deviceType.validity || 'N/A'}</TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end space-x-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleViewDeviceType(deviceType)}
+                          >
+                            <Eye className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleEditDeviceType(deviceType)}
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => openDeleteConfirm(deviceType)}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleManageDevices(deviceType)}
+                          >
+                            Manage Devices
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Add/Edit Modal */}
+      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>{isEditMode ? 'Edit Device Type' : 'Add Device Type'}</DialogTitle>
+            <DialogDescription>
+              {isEditMode 
+                ? 'Update the details of the device type.' 
+                : 'Fill in the details to create a new device type.'}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid items-center grid-cols-4 gap-4">
+              <Label htmlFor="name" className="text-right">
+                Name *
+              </Label>
+              <Input
+                id="name"
+                name="name"
+                value={formData.name}
+                onChange={handleInputChange}
+                className="col-span-3"
+                required
+              />
+            </div>
+            <div className="grid items-center grid-cols-4 gap-4">
+              <Label htmlFor="code" className="text-right">
+                Code *
+              </Label>
+              <Input
+                id="code"
+                name="code"
+                value={formData.code}
+                onChange={handleInputChange}
+                className="col-span-3"
+                required
+              />
+            </div>
+            <div className="grid items-center grid-cols-4 gap-4">
+              <Label htmlFor="manufacturer" className="text-right">
+                Manufacturer
+              </Label>
+              <Input
+                id="manufacturer"
+                name="manufacturer"
+                value={formData.manufacturer}
+                onChange={handleInputChange}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid items-center grid-cols-4 gap-4">
+              <Label htmlFor="countryOfOrigin" className="text-right">
+                Country of Origin
+              </Label>
+              <Input
+                id="countryOfOrigin"
+                name="countryOfOrigin"
+                value={formData.countryOfOrigin}
+                onChange={handleInputChange}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid items-center grid-cols-4 gap-4">
+              <Label htmlFor="yearOfManufacturing" className="text-right">
+                Year of Manufacturing
+              </Label>
+              <Input
+                id="yearOfManufacturing"
+                name="yearOfManufacturing"
+                value={formData.yearOfManufacturing}
+                onChange={handleInputChange}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid items-center grid-cols-4 gap-4">
+              <Label htmlFor="validity" className="text-right">
+                Validity
+              </Label>
+              <Input
+                id="validity"
+                name="validity"
+                value={formData.validity}
+                onChange={handleInputChange}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid items-center grid-cols-4 gap-4">
+              <Label htmlFor="parameters" className="text-right">
+                Parameters
+              </Label>
+              <Textarea
+                id="parameters"
+                name="parameters"
+                value={formData.parameters}
+                onChange={handleInputChange}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid items-center grid-cols-4 gap-4">
+              <Label htmlFor="remarks" className="text-right">
+                Remarks
+              </Label>
+              <Textarea
+                id="remarks"
+                name="remarks"
+                value={formData.remarks}
+                onChange={handleInputChange}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid items-center grid-cols-4 gap-4">
+              <Label htmlFor="manualUrl" className="text-right">
+                Manual URL
+              </Label>
+              <Input
+                id="manualUrl"
+                name="manualUrl"
+                value={formData.manualUrl}
+                onChange={handleInputChange}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid items-center grid-cols-4 gap-4">
+              <Label htmlFor="videoUrl" className="text-right">
+                Video URL
+              </Label>
+              <Input
+                id="videoUrl"
+                name="videoUrl"
+                value={formData.videoUrl}
+                onChange={handleInputChange}
+                className="col-span-3"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setIsModalOpen(false);
+              resetForm();
+              setIsEditMode(false);
+              setSelectedDeviceType(null);
+            }}>
+              Cancel
+            </Button>
+            <Button onClick={isEditMode ? handleUpdateDeviceType : handleAddDeviceType}>
+              {isEditMode ? 'Update' : 'Add'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* View Modal */}
+      <Dialog open={isViewModalOpen} onOpenChange={setIsViewModalOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Device Type Details</DialogTitle>
+          </DialogHeader>
+          {deviceToView && (
+            <div className="py-4">
+              <div className="grid grid-cols-3 gap-4">
+                <div className="font-medium text-right">ID:</div>
+                <div className="col-span-2">{deviceToView.id}</div>
+                
+                <div className="font-medium text-right">Name:</div>
+                <div className="col-span-2">{deviceToView.name}</div>
+                
+                <div className="font-medium text-right">Code:</div>
+                <div className="col-span-2">{deviceToView.code}</div>
+                
+                <div className="font-medium text-right">Manufacturer:</div>
+                <div className="col-span-2">{deviceToView.manufacturer || 'N/A'}</div>
+                
+                <div className="font-medium text-right">Country of Origin:</div>
+                <div className="col-span-2">{deviceToView.countryOfOrigin || 'N/A'}</div>
+                
+                <div className="font-medium text-right">Year of Manufacturing:</div>
+                <div className="col-span-2">{deviceToView.yearOfManufacturing || 'N/A'}</div>
+                
+                <div className="font-medium text-right">Validity:</div>
+                <div className="col-span-2">{deviceToView.validity || 'N/A'}</div>
+                
+                <div className="font-medium text-right">Parameters:</div>
+                <div className="col-span-2">{deviceToView.parameters || 'N/A'}</div>
+                
+                <div className="font-medium text-right">Remarks:</div>
+                <div className="col-span-2">{deviceToView.remarks || 'N/A'}</div>
+                
+                <div className="font-medium text-right">Manual URL:</div>
+                <div className="col-span-2">
+                  {deviceToView.manualUrl ? (
+                    <a 
+                      href={deviceToView.manualUrl} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:underline"
+                    >
+                      View Manual
+                    </a>
+                  ) : 'N/A'}
+                </div>
+                
+                <div className="font-medium text-right">Video URL:</div>
+                <div className="col-span-2">
+                  {deviceToView.videoUrl ? (
+                    <a 
+                      href={deviceToView.videoUrl} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:underline"
+                    >
+                      View Video
+                    </a>
+                  ) : 'N/A'}
+                </div>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsViewModalOpen(false)}>
+              Close
+            </Button>
+            {deviceToView && (
+              <Button onClick={() => {
+                setIsViewModalOpen(false);
+                handleManageDevices(deviceToView);
+              }}>
+                Manage Devices
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the device type
+              {deviceToDelete && ` "${deviceToDelete.name}"`} and all associated data.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setIsDeleteConfirmOpen(false)}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteDeviceType}>
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+};
+
+export default DeviceTypeManagement;
