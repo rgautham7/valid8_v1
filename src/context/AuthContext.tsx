@@ -11,7 +11,7 @@ interface AuthContextType {
   logout: () => void;
   userRole: 'provider' | 'user' | 'admin' | null;
   setUserRole: (role: 'provider' | 'user' | 'admin' | null) => void;
-  login: (username: string, password: string) => Promise<boolean>;
+  login: (usernameOrMobile: string, password: string) => Promise<boolean>;
   userData: User | null;
   providerData: Provider | null;
 }
@@ -110,9 +110,9 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }, []);
 
-  const login = async (username: string, password: string): Promise<boolean> => {
+  const login = async (usernameOrMobile: string, password: string): Promise<boolean> => {
     // Admin login
-    if (username === 'admin' && password === 'admin123') {
+    if (usernameOrMobile === 'admin' && password === 'admin123') {
       setIsAuthenticated(true);
       setUserRole('admin');
       setProviderId(null);
@@ -131,12 +131,14 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       return true;
     }
     
-    // Provider login - check if username matches any provider ID in localStorage
+    // Provider login - check if input matches any provider ID or mobile number in localStorage
     try {
       const providersData = localStorage.getItem('providers');
       if (providersData) {
         const providers = JSON.parse(providersData);
-        const providerMatch = providers.find((provider: Provider) => provider.id === username);
+        const providerMatch = providers.find((provider: Provider) => 
+          provider.id === usernameOrMobile || provider.mobileNo === usernameOrMobile
+        );
         
         if (providerMatch && password === 'provider123') {
           setIsAuthenticated(true);
@@ -162,7 +164,7 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
     
     // Legacy provider login
-    if (username === 'provider_a@example.com' && password === 'provider123') {
+    if (usernameOrMobile === 'provider_a@example.com' && password === 'provider123') {
       const providerId = 'PRV_A';
       setIsAuthenticated(true);
       setUserRole('provider');
@@ -184,12 +186,14 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       return true;
     }
     
-    // User login - check if username matches any user ID in localStorage
+    // User login - check if input matches any user ID or mobile number in localStorage
     try {
       const usersData = localStorage.getItem('users');
       if (usersData) {
         const users = JSON.parse(usersData);
-        const userMatch = users.find((user: User) => user.id === username);
+        const userMatch = users.find((user: User) => 
+          user.id === usernameOrMobile || user.mobileNo === usernameOrMobile
+        );
         
         if (userMatch && password === 'user123') {
           setIsAuthenticated(true);
@@ -215,7 +219,7 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
     
     // Legacy user login
-    if (username === 'user1@example.com' && password === 'user123') {
+    if (usernameOrMobile === 'user1@example.com' && password === 'user123') {
       const userId = 'USR_A1';
       setIsAuthenticated(true);
       setUserRole('user');

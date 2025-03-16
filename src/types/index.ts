@@ -22,6 +22,7 @@ export interface User {
   providerId: string;
   activity: 'Active' | 'Inactive';
   devices: UserDevice[];
+  mobileNo: string;
 }
 
 export interface UserDevice {
@@ -37,6 +38,7 @@ export interface Provider {
   age: number;
   deviceTypes: string[];
   usersCount: number;
+  mobileNo: string;
 }
 
 export interface Reading {

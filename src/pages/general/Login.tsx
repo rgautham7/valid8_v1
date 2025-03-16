@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
-import { Eye, EyeOff, LogIn, User, Users, Shield } from 'lucide-react';
+import { Eye, EyeOff, LogIn, User, Users, Shield, Phone } from 'lucide-react';
+import { Provider, User as UserType } from '../../types';
 
 // UI Components
 import {
@@ -16,6 +17,13 @@ import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../../components/ui/select";
 
 // Auth Context
 import { useAuth } from '../../context/AuthContext';
@@ -29,12 +37,13 @@ export default function Login() {
   const { role } = useParams<{ role?: 'user' | 'provider' | 'admin' }>();
   
   // State
-  const [username, setUsername] = useState('');
+  const [identifier, setIdentifier] = useState('');
+  const [identifierType, setIdentifierType] = useState<'id' | 'mobile'>('id');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [availableProviders, setAvailableProviders] = useState<string[]>([]);
-  const [availableUsers, setAvailableUsers] = useState<string[]>([]);
+  const [availableProviders, setAvailableProviders] = useState<{id: string, mobile: string}[]>([]);
+  const [availableUsers, setAvailableUsers] = useState<{id: string, mobile: string}[]>([]);
   const [activeTab, setActiveTab] = useState<'user' | 'provider' | 'admin'>('user');
   
   // Set active tab based on role parameter
@@ -46,12 +55,10 @@ export default function Login() {
   
   // Initialize localStorage with mock data if not already present
   useEffect(() => {
-    if (!localStorage.getItem('providers')) {
-      localStorage.setItem('providers', JSON.stringify(mockProviders));
-    }
-    if (!localStorage.getItem('users')) {
-      localStorage.setItem('users', JSON.stringify(mockUsers));
-    }
+    // Call our update function to ensure mobile numbers are added
+    updateLocalStorageWithMobileNumbers();
+    
+    // The rest of the existing initialization code...
     if (!localStorage.getItem('deviceTypes')) {
       localStorage.setItem('deviceTypes', JSON.stringify(mockDeviceTypes));
     }
@@ -62,21 +69,27 @@ export default function Login() {
       localStorage.setItem('deviceUsages', JSON.stringify(deviceUsages));
     }
     
-    // Load available provider IDs from localStorage
+    // Load available provider IDs and mobile numbers from localStorage
     try {
       const providersData = localStorage.getItem('providers');
       if (providersData) {
         const providers = JSON.parse(providersData);
-        const providerIds = providers.map((provider: any) => provider.id);
-        setAvailableProviders(providerIds);
+        const providerInfo = providers.map((provider: any) => ({
+          id: provider.id,
+          mobile: provider.mobileNo
+        }));
+        setAvailableProviders(providerInfo);
       }
       
-      // Load available user IDs from localStorage
+      // Load available user IDs and mobile numbers from localStorage
       const usersData = localStorage.getItem('users');
       if (usersData) {
         const users = JSON.parse(usersData);
-        const userIds = users.map((user: any) => user.id);
-        setAvailableUsers(userIds);
+        const userInfo = users.map((user: any) => ({
+          id: user.id,
+          mobile: user.mobileNo
+        }));
+        setAvailableUsers(userInfo);
       }
     } catch (error) {
       console.error('Error loading data:', error);
@@ -87,35 +100,39 @@ export default function Login() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!username || !password) {
-      toast.error('Please enter both username and password');
+    if (!identifier || !password) {
+      toast.error('Please enter both identifier and password');
       return;
     }
     
     setIsLoading(true);
     
     try {
-      const success = await login(username, password);
+      const success = await login(identifier, password);
       
       if (success) {
         toast.success('Login successful');
         
         // Redirect based on role
-        if (activeTab === 'admin' || username === 'admin') {
+        if (activeTab === 'admin' || identifier === 'admin') {
           navigate('/admin/dashboard');
-        } else if (activeTab === 'provider' || availableProviders.includes(username) || username === 'provider_a@example.com') {
+        } else if (activeTab === 'provider' || 
+                  availableProviders.some(p => p.id === identifier || p.mobile === identifier) || 
+                  identifier === 'provider_a@example.com') {
           navigate('/provider/home');
-        } else if (activeTab === 'user' || availableUsers.includes(username)) {
+        } else if (activeTab === 'user' || 
+                  availableUsers.some(u => u.id === identifier || u.mobile === identifier)) {
           navigate('/user/dashboard');
         } else {
           navigate('/user/dashboard');
         }
       } else {
         // Check if user exists in localStorage
-        if (activeTab === 'user' && !availableUsers.includes(username)) {
-          toast.error('User not found. Please check your ID');
+        if (activeTab === 'user' && 
+            !availableUsers.some(u => u.id === identifier || u.mobile === identifier)) {
+          toast.error('User not found. Please check your ID or mobile number');
         } else {
-          toast.error('Invalid username or password');
+          toast.error('Invalid credentials');
         }
       }
     } catch (error) {
@@ -158,36 +175,78 @@ export default function Login() {
             <CardContent className="mt-4 space-y-4">
               <TabsContent value="user" className="mt-0 space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="username">User ID</Label>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="identifier-type">Login with</Label>
+                    <Select
+                      value={identifierType}
+                      onValueChange={(value) => setIdentifierType(value as 'id' | 'mobile')}
+                    >
+                      <SelectTrigger className="w-[180px]">
+                        <SelectValue placeholder="Select login method" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="id">User ID</SelectItem>
+                        <SelectItem value="mobile">Mobile Number</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <Label htmlFor="user-identifier">
+                    {identifierType === 'id' ? 'User ID' : 'Mobile Number'}
+                  </Label>
                   <Input
-                    id="username"
-                    placeholder="Enter your User ID"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
+                    id="user-identifier"
+                    placeholder={identifierType === 'id' ? "Enter your User ID" : "Enter your mobile number"}
+                    value={identifier}
+                    onChange={(e) => setIdentifier(e.target.value)}
                     disabled={isLoading}
+                    type={identifierType === 'mobile' ? "tel" : "text"}
                   />
+                  
                   {availableUsers.length > 0 && (
-                    <p className="text-xs text-muted-foreground">
-                      Available User IDs: {availableUsers.join(', ')}
-                    </p>
+                    <div className="text-xs text-muted-foreground">
+                      <p>Available User IDs: {availableUsers.map(u => u.id).join(', ')}</p>
+                      <p>Available Mobile Numbers: {availableUsers.map(u => u.mobile).join(', ')}</p>
+                    </div>
                   )}
                 </div>
               </TabsContent>
               
               <TabsContent value="provider" className="mt-0 space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="provider-id">Provider ID</Label>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="identifier-type">Login with</Label>
+                    <Select
+                      value={identifierType}
+                      onValueChange={(value) => setIdentifierType(value as 'id' | 'mobile')}
+                    >
+                      <SelectTrigger className="w-[180px]">
+                        <SelectValue placeholder="Select login method" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="id">Provider ID</SelectItem>
+                        <SelectItem value="mobile">Mobile Number</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <Label htmlFor="provider-identifier">
+                    {identifierType === 'id' ? 'Provider ID' : 'Mobile Number'}
+                  </Label>
                   <Input
-                    id="provider-id"
-                    placeholder="Enter your Provider ID"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
+                    id="provider-identifier"
+                    placeholder={identifierType === 'id' ? "Enter your Provider ID" : "Enter your mobile number"}
+                    value={identifier}
+                    onChange={(e) => setIdentifier(e.target.value)}
                     disabled={isLoading}
+                    type={identifierType === 'mobile' ? "tel" : "text"}
                   />
+                  
                   {availableProviders.length > 0 && (
-                    <p className="text-xs text-muted-foreground">
-                      Available Provider IDs: {availableProviders.join(', ')}
-                    </p>
+                    <div className="text-xs text-muted-foreground">
+                      <p>Available Provider IDs: {availableProviders.map(p => p.id).join(', ')}</p>
+                      <p>Available Mobile Numbers: {availableProviders.map(p => p.mobile).join(', ')}</p>
+                    </div>
                   )}
                 </div>
               </TabsContent>
@@ -198,8 +257,8 @@ export default function Login() {
                   <Input
                     id="admin-username"
                     placeholder="Enter admin username"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
+                    value={identifier}
+                    onChange={(e) => setIdentifier(e.target.value)}
                     disabled={isLoading}
                   />
                   <p className="text-xs text-muted-foreground">
@@ -277,4 +336,51 @@ export default function Login() {
       </Card>
     </div>
   );
+}
+
+// Add this function to initialize or update localStorage with the new mock data
+function updateLocalStorageWithMobileNumbers() {
+  // First, check if localStorage already has data
+  const existingProviders = localStorage.getItem('providers');
+  const existingUsers = localStorage.getItem('users');
+  
+  // Update providers with mobile numbers
+  if (existingProviders) {
+    try {
+      const providers = JSON.parse(existingProviders);
+      // Add mobile numbers to existing providers
+      const updatedProviders = providers.map((provider: Provider, index: number) => ({
+        ...provider,
+        mobileNo: provider.mobileNo || `987654321${index}` // Add mobile if not exists
+      }));
+      localStorage.setItem('providers', JSON.stringify(updatedProviders));
+    } catch (error) {
+      console.error('Error updating providers:', error);
+      // If error, replace with new mock data
+      localStorage.setItem('providers', JSON.stringify(mockProviders));
+    }
+  } else {
+    // If no existing data, use mock data
+    localStorage.setItem('providers', JSON.stringify(mockProviders));
+  }
+  
+  // Update users with mobile numbers
+  if (existingUsers) {
+    try {
+      const users = JSON.parse(existingUsers);
+      // Add mobile numbers to existing users
+      const updatedUsers = users.map((user: UserType, index: number) => ({
+        ...user,
+        mobileNo: user.mobileNo || `987650000${index + 1}` // Add mobile if not exists
+      }));
+      localStorage.setItem('users', JSON.stringify(updatedUsers));
+    } catch (error) {
+      console.error('Error updating users:', error);
+      // If error, replace with new mock data
+      localStorage.setItem('users', JSON.stringify(mockUsers));
+    }
+  } else {
+    // If no existing data, use mock data
+    localStorage.setItem('users', JSON.stringify(mockUsers));
+  }
 }

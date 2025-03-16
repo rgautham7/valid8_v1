@@ -150,7 +150,7 @@ export default function ProviderHome() {
       }
       
       // Load device types from localStorage
-      let providerDeviceTypes: DeviceType[] = [];
+      let providerDeviceTypes = [];
       const deviceTypesData = localStorage.getItem('deviceTypes');
       if (deviceTypesData) {
         const allDeviceTypes = JSON.parse(deviceTypesData);
@@ -163,11 +163,11 @@ export default function ProviderHome() {
       
       // Load devices from localStorage
       const devicesData = localStorage.getItem('devices');
-      if (devicesData) {
+      if (devicesData && providerDeviceTypes.length > 0) {
         const allDevices = JSON.parse(devicesData);
         
         // Get device type IDs that this provider can manage
-        const deviceTypeIds = providerDeviceTypes.map(type => type.id);
+        const deviceTypeIds = providerDeviceTypes.map((type: DeviceType) => type.id);
         
         // Filter devices by device type
         const providerDevices = allDevices.filter((device: Device) => 

@@ -45,35 +45,40 @@ export const providers: Provider[] = [
     name: 'Dr. Alice Anderson',
     age: 42,
     deviceTypes: ['glucose-regulator'],
-    usersCount: 2  // Will match actual users below
+    usersCount: 2,
+    mobileNo: '9876543210'
   },
   {
     id: 'PRV_B',
     name: 'Dr. Bob Brown',
     age: 45,
     deviceTypes: ['glucose-regulator', 'pulse-regulator'],
-    usersCount: 3  // Will match actual users below
+    usersCount: 3,
+    mobileNo: '9876543211'
   },
   {
     id: 'PRV_C',
     name: 'Dr. Carol Chen',
     age: 38,
     deviceTypes: ['glucose-regulator', 'pressure-regulator'],
-    usersCount: 2  // Will match actual users below
+    usersCount: 2,
+    mobileNo: '9876543212'
   },
   {
     id: 'PRV_D',
     name: 'Dr. David Davis',
     age: 50,
     deviceTypes: ['pulse-regulator', 'pressure-regulator'],
-    usersCount: 2  // Will match actual users below
+    usersCount: 2,
+    mobileNo: '9876543213'
   },
   {
     id: 'PRV_E',
     name: 'Dr. Emma Evans',
     age: 41,
     deviceTypes: ['pressure-regulator'],
-    usersCount: 1  // Will match actual users below
+    usersCount: 1,
+    mobileNo: '9876543214'
   }
 ];
 
@@ -86,6 +91,7 @@ export const users: User[] = [
     gender: 'M',
     providerId: 'PRV_A',
     activity: 'Active',
+    mobileNo: '9876500001',
     devices: [
       {
         deviceId: 'GR_001',
@@ -102,6 +108,7 @@ export const users: User[] = [
     gender: 'F',
     providerId: 'PRV_A',
     activity: 'Active',
+    mobileNo: '9876500002',
     devices: [
       {
         deviceId: 'GR_002',
@@ -120,6 +127,7 @@ export const users: User[] = [
     gender: 'M',
     providerId: 'PRV_B',
     activity: 'Active',
+    mobileNo: '9876500003',
     devices: [
       {
         deviceId: 'GR_003',
@@ -142,6 +150,7 @@ export const users: User[] = [
     gender: 'F',
     providerId: 'PRV_B',
     activity: 'Active',
+    mobileNo: '9876500004',
     devices: [
       {
         deviceId: 'GR_004',
@@ -158,6 +167,7 @@ export const users: User[] = [
     gender: 'M',
     providerId: 'PRV_B',
     activity: 'Inactive',
+    mobileNo: '9876500005',
     devices: [
       {
         deviceId: 'PR_002',
@@ -176,6 +186,7 @@ export const users: User[] = [
     gender: 'F',
     providerId: 'PRV_C',
     activity: 'Active',
+    mobileNo: '9876500006',
     devices: [
       {
         deviceId: 'GR_005',
@@ -198,6 +209,7 @@ export const users: User[] = [
     gender: 'M',
     providerId: 'PRV_C',
     activity: 'Active',
+    mobileNo: '9876500007',
     devices: [
       {
         deviceId: 'PSR_002',
@@ -216,6 +228,7 @@ export const users: User[] = [
     gender: 'M',
     providerId: 'PRV_D',
     activity: 'Active',
+    mobileNo: '9876500008',
     devices: [
       {
         deviceId: 'PR_003',
@@ -232,6 +245,7 @@ export const users: User[] = [
     gender: 'F',
     providerId: 'PRV_D',
     activity: 'Active',
+    mobileNo: '9876500009',
     devices: [
       {
         deviceId: 'PR_004',
@@ -256,6 +270,7 @@ export const users: User[] = [
     gender: 'F',
     providerId: 'PRV_E',
     activity: 'Active',
+    mobileNo: '9876500010',
     devices: [
       {
         deviceId: 'PSR_004',
@@ -568,4 +583,51 @@ export const generateUsageStats = () => {
   return Object.values(stats);
 };
 
-export const usageStats = generateUsageStats(); 
+export const usageStats = generateUsageStats();
+
+// Add this function to initialize or update localStorage with the new mock data
+function updateLocalStorageWithMobileNumbers() {
+  // First, check if localStorage already has data
+  const existingProviders = localStorage.getItem('providers');
+  const existingUsers = localStorage.getItem('users');
+  
+  // Update providers with mobile numbers
+  if (existingProviders) {
+    try {
+      const providers = JSON.parse(existingProviders);
+      // Add mobile numbers to existing providers
+      const updatedProviders = providers.map((provider: Provider, index: number) => ({
+        ...provider,
+        mobileNo: provider.mobileNo || `987654321${index}` // Add mobile if not exists
+      }));
+      localStorage.setItem('providers', JSON.stringify(updatedProviders));
+    } catch (error) {
+      console.error('Error updating providers:', error);
+      // If error, replace with new mock data
+      localStorage.setItem('providers', JSON.stringify(providers));
+    }
+  } else {
+    // If no existing data, use mock data
+    localStorage.setItem('providers', JSON.stringify(providers));
+  }
+  
+  // Update users with mobile numbers
+  if (existingUsers) {
+    try {
+      const users = JSON.parse(existingUsers);
+      // Add mobile numbers to existing users
+      const updatedUsers = users.map((user: User, index: number) => ({
+        ...user,
+        mobileNo: user.mobileNo || `987650000${index + 1}` // Add mobile if not exists
+      }));
+      localStorage.setItem('users', JSON.stringify(updatedUsers));
+    } catch (error) {
+      console.error('Error updating users:', error);
+      // If error, replace with new mock data
+      localStorage.setItem('users', JSON.stringify(users));
+    }
+  } else {
+    // If no existing data, use mock data
+    localStorage.setItem('users', JSON.stringify(users));
+  }
+} 
