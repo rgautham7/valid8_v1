@@ -4,7 +4,7 @@ export interface DeviceType {
   name: string;  // 'Pressure Regulator' | 'Glucose Regulator' | 'Pulse Regulator'
   code: string;  // 'pressure-regulator' | 'glucose-regulator' | 'pulse-regulator'
   image?: string;
-  parameters?: string;
+  parameters?: string[];
   manufacturer?: string;
   countryOfOrigin?: string;
   yearOfManufacturing?: string;
@@ -35,7 +35,9 @@ export interface UserDevice {
 export interface Provider {
   id: string;
   name: string;
-  age: number;
+  hospital: string;
+  licenseNumber: string;
+  specialistIn: string;
   deviceTypes: string[];
   usersCount: number;
   mobileNo: string;

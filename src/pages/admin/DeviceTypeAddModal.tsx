@@ -4,6 +4,7 @@ import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import { Textarea } from '../../components/ui/textarea';
+import ParameterSelector from '../../components/ui/parameter-selector';
 
 interface DeviceTypeModalProps {
 	isOpen: boolean;
@@ -15,8 +16,9 @@ interface DeviceTypeModalProps {
 
 export interface DeviceTypeFormData {
 	image: File | null;
+	name: string;
 	deviceType: string;
-	deviceParameters: string;
+	deviceParameters: string[];
 	manufacturer: string;
 	countryOfOrigin: string;
 	yearOfManufacturing: string;
@@ -35,8 +37,9 @@ const DeviceTypeAddModal: React.FC<DeviceTypeModalProps> = ({
 }) => {
 	const [formData, setFormData] = useState<DeviceTypeFormData>({
 		image: null,
+		name: '',
 		deviceType: '',
-		deviceParameters: '',
+		deviceParameters: [],
 		manufacturer: '',
 		countryOfOrigin: '',
 		yearOfManufacturing: '',
@@ -48,13 +51,20 @@ const DeviceTypeAddModal: React.FC<DeviceTypeModalProps> = ({
 
 	const [errors, setErrors] = useState<Partial<Record<keyof DeviceTypeFormData, string>>>({});
 	const [imagePreview, setImagePreview] = useState<string | null>(null);
+	const [nameError, setNameError] = useState<string>('');
 
 	// Initialize form with initial data if provided
 	useEffect(() => {
 		if (initialData) {
+			let parameters = initialData.deviceParameters || [];
+			if (typeof parameters === 'string') {
+				parameters = parameters.split(',').map(p => p.trim());
+			}
+			
 			setFormData(prev => ({
 				...prev,
-				...initialData
+				...initialData,
+				deviceParameters: parameters
 			}));
 		}
 	}, [initialData]);
@@ -96,12 +106,16 @@ const DeviceTypeAddModal: React.FC<DeviceTypeModalProps> = ({
 			newErrors.image = 'Device image is required';
 		}
 		
+		if (!formData.name.trim()) {
+			newErrors.name = 'Device type name is required';
+		}
+		
 		if (!formData.deviceType.trim()) {
 			newErrors.deviceType = 'Device type is required';
 		}
 		
-		if (!formData.deviceParameters.trim()) {
-			newErrors.deviceParameters = 'Device parameters are required';
+		if (!formData.deviceParameters || formData.deviceParameters.length === 0) {
+			newErrors.deviceParameters = 'At least one parameter is required';
 		}
 		
 		if (!formData.manufacturer.trim()) {
@@ -188,30 +202,77 @@ const DeviceTypeAddModal: React.FC<DeviceTypeModalProps> = ({
 						{errors.image && <p className="mt-1 text-sm text-red-600">{errors.image}</p>}
 					</div>
 
-					{/* Device Type */}
+					{/* Device Type Name */}
 					<div>
-						<Label htmlFor="deviceType">Device Type <span className="text-red-500">*</span></Label>
+						<Label htmlFor="name">Device Type Name <span className="text-red-500">*</span></Label>
+						<Input
+							id="name"
+							name="name"
+							value={formData.name}
+							onChange={(e) => {
+								const newName = e.target.value;
+								setFormData(prev => ({ 
+									...prev, 
+									name: newName,
+									deviceType: newName.toLowerCase().replace(/\s+/g, '-') 
+								}));
+								
+								// Check for duplicates in localStorage
+								const deviceTypes = JSON.parse(localStorage.getItem('deviceTypes') || '[]');
+								const isDuplicate = deviceTypes.some((dt: any) => 
+									dt.name.toLowerCase() === newName.toLowerCase()
+								);
+								
+								if (isDuplicate) {
+									setNameError('This device type name already exists');
+								} else {
+									setNameError('');
+								}
+							}}
+							onBlur={(e) => {
+								// Auto-generate deviceType when focus leaves name input
+								const name = e.target.value;
+								setFormData(prev => ({
+									...prev,
+									deviceType: name.toLowerCase().replace(/\s+/g, '-')
+								}));
+							}}
+							className={nameError ? 'border-red-500' : ''}
+						/>
+						{nameError && <p className="mt-1 text-sm text-red-600">{nameError}</p>}
+					</div>
+
+					{/* Device Type Code */}
+					<div>
+						<Label htmlFor="deviceType">Device Type Code</Label>
 						<Input
 							id="deviceType"
 							name="deviceType"
 							value={formData.deviceType}
-							onChange={handleInputChange}
-							className={errors.deviceType ? 'border-red-500' : ''}
+							readOnly
+							className="bg-gray-100"
 						/>
-						{errors.deviceType && <p className="mt-1 text-sm text-red-600">{errors.deviceType}</p>}
 					</div>
 
 					{/* Device Parameters */}
 					<div>
-						<Label htmlFor="deviceParameters">Device Parameters <span className="text-red-500">*</span></Label>
-						<Input
-							id="deviceParameters"
-							name="deviceParameters"
-							value={formData.deviceParameters}
-							onChange={handleInputChange}
-							className={errors.deviceParameters ? 'border-red-500' : ''}
-						/>
-						{errors.deviceParameters && <p className="mt-1 text-sm text-red-600">{errors.deviceParameters}</p>}
+						<Label htmlFor="deviceParameters">
+							Device Parameters <span className="text-red-500">*</span>
+						</Label>
+						<div className="mt-1">
+							<ParameterSelector
+								selectedParameters={formData.deviceParameters}
+								onChange={(parameters) => {
+									setFormData(prev => ({ ...prev, deviceParameters: parameters }));
+									if (errors.deviceParameters) {
+										setErrors(prev => ({ ...prev, deviceParameters: undefined }));
+									}
+								}}
+							/>
+						</div>
+						{errors.deviceParameters && (
+							<p className="mt-1 text-sm text-red-600">{errors.deviceParameters}</p>
+						)}
 					</div>
 
 					{/* Manufacturer */}

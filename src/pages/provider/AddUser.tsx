@@ -1,8 +1,8 @@
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
-import { Calendar } from "../../components/ui/calendar"
 import { Button } from "../../components/ui/button"
 import {
   Form,
@@ -21,184 +21,386 @@ import {
 import { Input } from "../../components/ui/input"
 import { RadioGroup, RadioGroupItem } from "../../components/ui/radio-group"
 import { Textarea } from "../../components/ui/textarea" 
-import { Toaster } from "../../components/ui/sonner"
-import { format } from "date-fns"
-import { CalendarIcon } from "lucide-react"
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "../../components/ui/popover"
-import { cn } from "../../lib/utils"
-import { 
   User, 
-  UserCircle, 
   Phone, 
   Mail, 
-  Building,
   CreditCard,
   MessageSquare,
   Smartphone
 } from "lucide-react"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../../components/ui/select";
+import { DeviceType, Device, Provider } from '../../types';
+import { toast } from "react-hot-toast";
 
 // Form validation schema
 const formSchema = z.object({
   userName: z.string().min(2, "Username must be at least 2 characters"),
   userId: z.string().min(1, "User ID is required"),
   gender: z.enum(["male", "female", "other"]),
-  dateOfBirth: z.date().optional().nullable(),
+  age: z.number().min(1, "Age is required"),
   mobile: z.string().min(10, "Mobile number must be at least 10 digits"),
-  email: z.string().email("Invalid email address"),
-  providerName: z.string().min(2, "Provider name is required"),
-  providerId: z.string().min(1, "Provider ID is required"),
-  providerMobile: z.string().min(10, "Provider mobile must be at least 10 digits"),
-  providerEmail: z.string().email("Invalid provider email address"),
-  deviceAllocation: z.date().optional().nullable(),
-  lastUsed: z.date().optional().nullable(),
-  remarks: z.string().optional()
-})
+  email: z.string().email("Invalid email address").optional(),
+  deviceTypeCode: z.string().optional(),
+  deviceId: z.string().optional(),
+  remarks: z.string().optional(),
+  activity: z.string().default("Active")
+});
+
+// Function to get auth data directly from localStorage
+const getAuthData = () => {
+  try {
+    const authData = localStorage.getItem('authData');
+    if (authData) {
+      return JSON.parse(authData);
+    }
+    return null;
+  } catch (error) {
+    console.error('Error parsing auth data:', error);
+    return null;
+  }
+};
 
 const AddUser = () => {
   const navigate = useNavigate();
+  
+  const [providerId, setProviderId] = useState<string | null>(null);
+  const [provider, setProvider] = useState<Provider | null>(null);
+  const [availableDevices, setAvailableDevices] = useState<Device[]>([]);
+  const [filteredDevices, setFilteredDevices] = useState<Device[]>([]);
+  const [deviceTypes, setDeviceTypes] = useState<DeviceType[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [deviceTypeSelected, setDeviceTypeSelected] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       userName: "",
-      userId: "",
+      userId: `USR_${Math.random().toString(36).substring(2, 6).toUpperCase()}`,
       gender: "male",
-      dateOfBirth: null,
+      age: 30,
       mobile: "",
       email: "",
-      providerName: "John Doe Provider",
-      providerId: "PRV123456",
-      providerMobile: "+1 234-567-8900",
-      providerEmail: "provider@example.com",
-      deviceAllocation: null,
-      lastUsed: null,
-      remarks: ""
+      deviceTypeCode: undefined,
+      deviceId: undefined,
+      remarks: "",
+      activity: "Active"
     },
-  })
+  });
+  
+  // Watch for device type changes
+  const selectedDeviceType = form.watch("deviceTypeCode");
+
+  // Get provider ID from localStorage on component mount
+  useEffect(() => {
+    const authData = getAuthData();
+    if (authData && authData.userRole === 'provider' && authData.providerId) {
+      setProviderId(authData.providerId);
+    } else {
+      toast.error("Provider authentication data not found");
+      navigate('/login/provider');
+    }
+  }, [navigate]);
+
+  // Load provider data and device types
+  useEffect(() => {
+    const loadData = async () => {
+      if (!providerId) return;
+      
+      setLoading(true);
+      try {
+        // Load provider data
+        const providersData = localStorage.getItem('providers');
+        if (!providersData) {
+          toast.error("Provider data not available");
+          return;
+        }
+
+        const providers: Provider[] = JSON.parse(providersData);
+        const currentProvider = providers.find(p => p.id === providerId);
+
+        if (!currentProvider) {
+          toast.error("Provider not found");
+          return;
+        }
+
+        setProvider(currentProvider);
+
+        // Load device types
+        const deviceTypesData = localStorage.getItem('deviceTypes');
+        if (deviceTypesData) {
+          const allDeviceTypes: DeviceType[] = JSON.parse(deviceTypesData);
+          const providerDeviceTypes = allDeviceTypes.filter(dt => 
+            currentProvider.deviceTypes.includes(dt.code)
+          );
+          setDeviceTypes(providerDeviceTypes);
+        }
+
+        // Load all devices (we'll filter them later based on device type)
+        loadAvailableDevices();
+      } catch (error) {
+        console.error('Error loading data:', error);
+        toast.error('Failed to load data');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
+  }, [providerId]);
+
+  // Load all available devices
+  const loadAvailableDevices = () => {
+    try {
+      const devicesData = localStorage.getItem('devices');
+      if (!devicesData) {
+        toast.error("Device data not available");
+        return;
+      }
+
+      const allDevices: Device[] = JSON.parse(devicesData);
+      // We want both inactive and not allocated devices
+      const availDevices = allDevices.filter(device => 
+        device.allocation === 'not allocated' ||
+        device.status === 'inactive'
+      );
+      
+      setAvailableDevices(availDevices);
+      console.log("Available devices loaded:", availDevices);
+    } catch (error) {
+      console.error('Error loading devices:', error);
+      toast.error('Failed to load devices');
+    }
+  };
+
+  // Update filtered devices when device type changes
+  useEffect(() => {
+    if (selectedDeviceType) {
+      setDeviceTypeSelected(true);
+      
+      // Find the device type object by code
+      const selectedTypeObj = deviceTypes.find(dt => dt.code === selectedDeviceType);
+      
+      if (selectedTypeObj) {
+        // Filter devices that match the selected device type ID and are either:
+        // 1. Not allocated and active, OR
+        // 2. Inactive (regardless of allocation)
+        const filtered = availableDevices.filter(device => {
+          return device.deviceTypeId === selectedTypeObj.id && 
+                (device.allocation === 'not allocated' || device.status === 'inactive');
+        });
+        
+        console.log("Selected device type:", selectedTypeObj);
+        console.log("Filtered devices:", filtered);
+        
+        setFilteredDevices(filtered);
+      } else {
+        setFilteredDevices([]);
+      }
+      
+      // Reset device ID when device type changes
+      form.setValue('deviceId', undefined);
+    } else {
+      setDeviceTypeSelected(false);
+      setFilteredDevices([]);
+    }
+  }, [selectedDeviceType, availableDevices, deviceTypes, form]);
 
   const onSubmit = (values: z.infer<typeof formSchema>) => {
-    console.log('Form submitted:', values);
-    Toaster({
-      title: "User Registration Successful",
-      description: "New user has been added successfully.",
-    })
-    navigate('/provider');
+    if (!providerId) {
+      toast.error("Provider ID not available");
+      return;
+    }
+
+    // Validate device type is selected if device is selected
+    if (values.deviceId && values.deviceId !== 'no_device' && !values.deviceTypeCode) {
+      form.setError('deviceTypeCode', {
+        type: 'manual',
+        message: 'Please select a device type first'
+      });
+      return;
+    }
+
+    try {
+      // Get selected device and device type information
+      const selectedDevice = values.deviceId && values.deviceId !== 'no_device' ? 
+        availableDevices.find(d => d.id === values.deviceId) : null;
+      
+      const selectedTypeCode = values.deviceTypeCode || '';
+      
+      // Create new user object
+      const newUser = {
+        id: values.userId,
+        name: values.userName,
+        age: values.age,
+        gender: values.gender === 'male' ? 'M' : values.gender === 'female' ? 'F' : 'O',
+        providerId: providerId,
+        activity: values.activity,
+        mobileNo: values.mobile,
+        email: values.email || undefined,
+        devices: selectedDevice ? [
+          {
+            deviceId: selectedDevice.id,
+            deviceType: selectedTypeCode,
+            allocatedOn: new Date().toISOString().split('T')[0],
+            lastUsedOn: new Date().toISOString().split('T')[0]
+          }
+        ] : []
+      };
+
+      // Save new user to localStorage
+      const usersData = localStorage.getItem('users');
+      let users = usersData ? JSON.parse(usersData) : [];
+      users.push(newUser);
+      localStorage.setItem('users', JSON.stringify(users));
+
+      // If a device is allocated, update its status
+      if (selectedDevice) {
+        const devicesData = localStorage.getItem('devices');
+        if (devicesData) {
+          const devices = JSON.parse(devicesData);
+          const updatedDevices = devices.map((device: Device) => {
+            if (device.id === selectedDevice.id) {
+              return {
+                ...device,
+                status: 'active', // Set status to active
+                allocation: 'allocated', // Set allocation to allocated
+                allocatedTo: values.userId,
+                lastUsedOn: new Date().toISOString().split('T')[0]
+              };
+            }
+            return device;
+          });
+          localStorage.setItem('devices', JSON.stringify(updatedDevices));
+        }
+      }
+
+      // Update provider's user count
+      if (provider) {
+        const providersData = localStorage.getItem('providers');
+        if (providersData) {
+          const providers = JSON.parse(providersData);
+          const updatedProviders = providers.map((p: Provider) => {
+            if (p.id === providerId) {
+              return {
+                ...p,
+                usersCount: (p.usersCount || 0) + 1
+              };
+            }
+            return p;
+          });
+          localStorage.setItem('providers', JSON.stringify(updatedProviders));
+        }
+      }
+
+      toast.success('User registered successfully');
+      navigate('/provider');
+    } catch (error) {
+      console.error('Error registering user:', error);
+      toast.error('Failed to register user');
+    }
+  };
+
+  // Custom validation for device selection
+  const validateDeviceSelection = () => {
+    if (form.getValues('deviceTypeCode') && !form.getValues('deviceId')) {
+      form.setError('deviceId', {
+        type: 'manual',
+        message: 'Please select a device after selecting device type'
+      });
+    } else if (!form.getValues('deviceTypeCode') && form.getValues('deviceId') && form.getValues('deviceId') !== 'no_device') {
+      form.setError('deviceTypeCode', {
+        type: 'manual',
+        message: 'Please select a device type first'
+      });
+    }
+  };
+
+  // Simple loading indicator
+  if (loading) {
+    return (
+      <div className="container flex items-center justify-center min-h-screen mx-auto">
+        <div className="w-12 h-12 border-4 border-t-4 border-gray-200 rounded-full border-t-blue-500 animate-spin"></div>
+      </div>
+    );
   }
 
+  // Content display
   return (
-    <div className="container min-h-screen px-4 py-10 mx-auto bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
-      <Card className="max-w-4xl mx-auto transition-all duration-300 border border-gray-200 shadow-xl hover:shadow-2xl dark:border-gray-700 backdrop-blur-sm bg-white/80 dark:bg-gray-900/80">
-        <CardHeader className="space-y-1 border-b border-gray-200 dark:border-gray-700">
-          <CardTitle className="text-3xl font-semibold text-center text-transparent bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text dark:from-gray-100 dark:to-gray-400">
-            Add New User
-          </CardTitle>
+    <div className="container px-4 py-10 mx-auto">
+      <Card className="max-w-4xl mx-auto">
+        <CardHeader className="border-b">
+          <CardTitle>Add New User</CardTitle>
         </CardHeader>
         <CardContent className="pt-6">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
               {/* Provider Details Section */}
-              <div className="p-6 space-y-6 transition-colors duration-200 rounded-lg bg-gray-50 dark:bg-gray-800/50">
+              <div className="p-6 space-y-6 rounded-lg bg-gray-50">
                 <h3 className="pl-3 text-lg font-semibold border-l-4 border-primary">Provider Details</h3>
                 
                 {/* Provider Name and ID Row */}
                 <div className="grid grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="providerName"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Provider Name</FormLabel>
-                        <FormControl>
-                          <div className="relative">
-                            <User className="absolute left-2 top-2.5 h-5 w-5 text-gray-400" />
-                            <Input 
-                              {...field} 
-                              readOnly 
-                              className="bg-muted pl-9"
-                            />
-                          </div>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Provider Name</label>
+                    <div className="relative">
+                      <User className="absolute left-2 top-2.5 h-5 w-5 text-gray-400" />
+                      <Input 
+                        value={provider?.name || ""} 
+                        readOnly 
+                        className="pl-9 bg-muted"
+                      />
+                    </div>
+                  </div>
 
-                  <FormField
-                    control={form.control}
-                    name="providerId"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Provider ID</FormLabel>
-                        <FormControl>
-                          <div className="relative">
-                            <CreditCard className="absolute left-2 top-2.5 h-5 w-5 text-gray-400" />
-                            <Input 
-                              {...field} 
-                              readOnly 
-                              className="bg-muted pl-9"
-                            />
-                          </div>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Provider ID</label>
+                    <div className="relative">
+                      <CreditCard className="absolute left-2 top-2.5 h-5 w-5 text-gray-400" />
+                      <Input 
+                        value={provider?.id || ""} 
+                        readOnly 
+                        className="pl-9 bg-muted"
+                      />
+                    </div>
+                  </div>
                 </div>
 
-                {/* Provider Mobile and Email Row */}
+                {/* Provider Mobile and Specialist Row */}
                 <div className="grid grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="providerMobile"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Provider Mobile</FormLabel>
-                        <FormControl>
-                          <div className="relative">
-                            <Phone className="absolute left-2 top-2.5 h-5 w-5 text-gray-400" />
-                            <Input 
-                              {...field} 
-                              readOnly 
-                              className="bg-muted pl-9"
-                            />
-                          </div>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Mobile Number</label>
+                    <div className="relative">
+                      <Phone className="absolute left-2 top-2.5 h-5 w-5 text-gray-400" />
+                      <Input 
+                        value={provider?.mobileNo || ""} 
+                        readOnly 
+                        className="pl-9 bg-muted"
+                      />
+                    </div>
+                  </div>
 
-                  <FormField
-                    control={form.control}
-                    name="providerEmail"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Provider Email</FormLabel>
-                        <FormControl>
-                          <div className="relative">
-                            <Mail className="absolute left-2 top-2.5 h-5 w-5 text-gray-400" />
-                            <Input 
-                              placeholder={field.value}
-                              {...field} 
-                              readOnly 
-                              className="bg-muted pl-9"
-                              type="email"
-                            />
-                          </div>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Specialization</label>
+                    <div className="relative">
+                      <Input 
+                        value={provider?.specialistIn || ""} 
+                        readOnly 
+                        className="pl-3 bg-muted"
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
 
               {/* User Details Section */}
-              <div className="p-6 space-y-6 transition-colors duration-200 rounded-lg bg-gray-50 dark:bg-gray-800/50">
+              <div className="p-6 space-y-6 rounded-lg bg-gray-50">
                 <h3 className="pl-3 text-lg font-semibold border-l-4 border-primary">User Details</h3>
                 
                 {/* Username and User ID Row */}
@@ -234,9 +436,9 @@ const AddUser = () => {
                           <div className="relative">
                             <CreditCard className="absolute left-2 top-2.5 h-5 w-5 text-gray-400" />
                             <Input 
-                              placeholder="Enter user ID" 
                               {...field} 
                               className="pl-9"
+                              disabled
                             />
                           </div>
                         </FormControl>
@@ -246,7 +448,7 @@ const AddUser = () => {
                   />
                 </div>
 
-                {/* Gender and DOB Row */}
+                {/* Gender and Age Row */}
                 <div className="grid grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
@@ -287,41 +489,17 @@ const AddUser = () => {
 
                   <FormField
                     control={form.control}
-                    name="dateOfBirth"
+                    name="age"
                     render={({ field }) => (
-                      <FormItem className="flex flex-col">
-                        <FormLabel>Date of Birth</FormLabel>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <FormControl>
-                              <Button
-                                variant={"outline"}
-                                className={cn(
-                                  "w-full pl-3 text-left font-normal",
-                                  !field.value && "text-muted-foreground"
-                                )}
-                              >
-                                {field.value ? (
-                                  format(field.value, "PPP")
-                                ) : (
-                                  <span>Pick a date</span>
-                                )}
-                                <CalendarIcon className="w-4 h-4 ml-auto opacity-50" />
-                              </Button>
-                            </FormControl>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0" align="start">
-                            <Calendar
-                              mode="single"
-                              selected={field.value}
-                              onSelect={field.onChange}
-                              disabled={(date) =>
-                                date > new Date() || date < new Date("1900-01-01")
-                              }
-                              initialFocus
-                            />
-                          </PopoverContent>
-                        </Popover>
+                      <FormItem>
+                        <FormLabel>Age</FormLabel>
+                        <FormControl>
+                          <Input 
+                            type="number" 
+                            {...field}
+                            onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                          />
+                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -330,7 +508,7 @@ const AddUser = () => {
               </div>
 
               {/* Contact Details Section */}
-              <div className="p-6 space-y-6 transition-colors duration-200 rounded-lg bg-gray-50 dark:bg-gray-800/50">
+              <div className="p-6 space-y-6 rounded-lg bg-gray-50">
                 <h3 className="pl-3 text-lg font-semibold border-l-4 border-primary">Contact Details</h3>
                 <div className="grid grid-cols-2 gap-4">
                   <FormField
@@ -359,7 +537,7 @@ const AddUser = () => {
                     name="email"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Email</FormLabel>
+                        <FormLabel>Email (Optional)</FormLabel>
                         <FormControl>
                           <div className="relative">
                             <Mail className="absolute left-2 top-2.5 h-5 w-5 text-gray-400" />
@@ -378,95 +556,103 @@ const AddUser = () => {
                 </div>
               </div>
 
-              {/* Device Details Section */}
-              <div className="p-6 space-y-6 transition-colors duration-200 rounded-lg bg-gray-50 dark:bg-gray-800/50">
-                <h3 className="pl-3 text-lg font-semibold border-l-4 border-primary">Device Details</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="deviceAllocation"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-col">
-                        <FormLabel>Device Allocation Date</FormLabel>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <FormControl>
-                              <Button
-                                variant={"outline"}
-                                className={cn(
-                                  "w-full pl-3 text-left font-normal",
-                                  !field.value && "text-muted-foreground"
-                                )}
-                              >
-                                {field.value ? (
-                                  format(field.value, "PPP")
-                                ) : (
-                                  <span>Pick a date</span>
-                                )}
-                                <CalendarIcon className="w-4 h-4 ml-auto opacity-50" />
-                              </Button>
-                            </FormControl>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0" align="start">
-                            <Calendar
-                              mode="single"
-                              selected={field.value}
-                              onSelect={field.onChange}
-                              initialFocus
-                            />
-                          </PopoverContent>
-                        </Popover>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+              {/* Device Allocation Section */}
+              <div className="p-6 space-y-6 rounded-lg bg-gray-50">
+                <h3 className="pl-3 text-lg font-semibold border-l-4 border-primary">Device Allocation</h3>
+                
+                {/* First select Device Type */}
+                <FormField
+                  control={form.control}
+                  name="deviceTypeCode"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Device Type</FormLabel>
+                      <Select 
+                        onValueChange={(value) => {
+                          field.onChange(value);
+                        }}
+                        value={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a device type" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {provider?.deviceTypes.map(code => {
+                            const deviceType = deviceTypes.find(dt => dt.code === code);
+                            return (
+                              <SelectItem key={code} value={code}>
+                                {deviceType?.name || code}
+                              </SelectItem>
+                            );
+                          })}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-                  <FormField
-                    control={form.control}
-                    name="lastUsed"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-col">
-                        <FormLabel>Last Used Date</FormLabel>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <FormControl>
-                              <Button
-                                variant={"outline"}
-                                className={cn(
-                                  "w-full pl-3 text-left font-normal",
-                                  !field.value && "text-muted-foreground"
-                                )}
-                              >
-                                {field.value ? (
-                                  format(field.value, "PPP")
-                                ) : (
-                                  <span>Pick a date</span>
-                                )}
-                                <CalendarIcon className="w-4 h-4 ml-auto opacity-50" />
-                              </Button>
-                            </FormControl>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0" align="start">
-                            <Calendar
-                              mode="single"
-                              selected={field.value}
-                              onSelect={field.onChange}
-                              initialFocus
-                            />
-                          </PopoverContent>
-                        </Popover>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
+                {/* Then select Device */}
+                <FormField
+                  control={form.control}
+                  name="deviceId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Allocate Device (Optional)</FormLabel>
+                      <Select 
+                        onValueChange={field.onChange} 
+                        value={field.value}
+                        disabled={!deviceTypeSelected}
+                        onOpenChange={() => {
+                          if (!deviceTypeSelected) {
+                            form.setError('deviceTypeCode', {
+                              type: 'manual',
+                              message: 'Select device type first'
+                            });
+                          }
+                        }}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder={deviceTypeSelected ? "Select a device to allocate" : "Select device type first"} />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="no_device">No device</SelectItem>
+                          {filteredDevices.length > 0 ? (
+                            filteredDevices.map(device => {
+                              const deviceType = deviceTypes.find(dt => dt.id === device.deviceTypeId);
+                              const deviceStatus = device.status === 'inactive' ? ' (Inactive)' : '';
+                              return (
+                                <SelectItem key={device.id} value={device.id}>
+                                  {device.id} - {deviceType?.name || device.deviceTypeId}{deviceStatus}
+                                </SelectItem>
+                              );
+                            })
+                          ) : (
+                            deviceTypeSelected && <SelectItem value="no_available" disabled>No available devices</SelectItem>
+                          )}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                      {!deviceTypeSelected && field.value && (
+                        <p className="text-sm font-medium text-destructive">Select device type first</p>
+                      )}
+                      {deviceTypeSelected && filteredDevices.length === 0 && (
+                        <p className="text-sm font-medium text-amber-500">No available devices for this device type</p>
+                      )}
+                    </FormItem>
+                  )}
+                />
 
                 <FormField
                   control={form.control}
                   name="remarks"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Remarks</FormLabel>
+                      <FormLabel>Remarks (Optional)</FormLabel>
                       <FormControl>
                         <div className="relative">
                           <MessageSquare className="absolute left-2 top-2.5 h-5 w-5 text-gray-400" />
@@ -483,24 +669,27 @@ const AddUser = () => {
                 />
               </div>
 
-              {/* Updated Button Section with Larger Buttons */}
-              <div className="flex justify-center pt-6 space-x-20">
+              {/* Button Section */}
+              <div className="flex justify-center pt-6 space-x-4">
                 <Button 
-                  type="submit" 
-                  size="lg"
-                  className="px-8 py-6 text-lg font-semibold text-white transition-all duration-300 bg-green-500 shadow-lg hover:bg-green-600 hover:shadow-xl hover:scale-105"
-                  onClick={() => navigate('/provider')}
+                  type="submit"
+                  onClick={() => validateDeviceSelection()}
                 >
                   Register User
                 </Button>
                 <Button 
                   type="button" 
-                  variant="outline" 
-                  size="lg"
-                  className="px-8 py-6 text-lg font-semibold text-white transition-all duration-300 bg-orange-500 shadow-md hover:text-white hover:bg-orange-600 hover:shadow-lg hover:scale-105"
+                  variant="outline"
                   onClick={() => navigate('/provider/upload')}
                 >
                   Add as Bulk
+                </Button>
+                <Button 
+                  type="button" 
+                  variant="secondary"
+                  onClick={() => navigate('/provider')}
+                >
+                  Cancel
                 </Button>
               </div>
             </form>

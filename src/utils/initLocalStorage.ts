@@ -1,5 +1,5 @@
 // src/utils/initLocalStorage.ts
-import { deviceTypes, providers, users, devices } from '../data/mockData';
+import { deviceTypes, providers, users, devices, migrateParametersToArray } from '../data/mockData';
 
 /**
  * Initialize localStorage with mock data if it doesn't exist
@@ -11,6 +11,9 @@ export const initLocalStorage = () => {
   if (!localStorage.getItem('deviceTypes')) {
     console.log('Initializing deviceTypes in localStorage');
     localStorage.setItem('deviceTypes', JSON.stringify(deviceTypes));
+  } else {
+    // Migrate existing parameters to array format
+    migrateParametersToArray();
   }
   
   // Initialize providers

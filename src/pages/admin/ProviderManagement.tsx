@@ -210,12 +210,12 @@ const ProviderManagement: React.FC = () => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>ID</TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Age</TableHead>
-                  <TableHead>Device Types</TableHead>
-                  <TableHead>Users Count</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead className="text-left uppercase">ID</TableHead>
+                  <TableHead className="text-left uppercase">Name</TableHead>
+                  <TableHead className="text-left uppercase">License Number</TableHead>
+                  <TableHead className="text-left uppercase">Device Types</TableHead>
+                  <TableHead className="text-left uppercase">Users Count</TableHead>
+                  <TableHead className="text-right uppercase">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -230,7 +230,7 @@ const ProviderManagement: React.FC = () => {
                     <TableRow key={provider.id}>
                       <TableCell>{provider.id}</TableCell>
                       <TableCell>{provider.name}</TableCell>
-                      <TableCell>{provider.age}</TableCell>
+                      <TableCell>{provider.licenseNumber}</TableCell>
                       <TableCell>{provider.deviceTypes.join(', ')}</TableCell>
                       <TableCell>{provider.usersCount}</TableCell>
                       <TableCell className="text-right">

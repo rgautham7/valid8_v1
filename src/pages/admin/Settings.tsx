@@ -13,10 +13,10 @@ const Settings = () => {
       <h1 className="mb-6 text-3xl font-bold">Settings</h1>
 
       <Tabs defaultValue="device-types" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="device-types">Device Types</TabsTrigger>
           <TabsTrigger value="providers">Providers</TabsTrigger>
-          <TabsTrigger value="users">Users</TabsTrigger>
+          {/* <TabsTrigger value="users">Users</TabsTrigger> */}
         </TabsList>
 
         <TabsContent value="device-types">

@@ -80,7 +80,7 @@ const ProvNavbar: React.FC = () => {
             <Cpu className="w-4 h-4 mr-2" />
             Manage Devices
           </Link>
-          <Link
+          {/* <Link
             to="/provider/file-upload"
             className={`flex items-center px-3 py-2 text-sm font-medium rounded-md ${
               isActive('/provider/file-upload')
@@ -90,7 +90,7 @@ const ProvNavbar: React.FC = () => {
           >
             <FileUp className="w-4 h-4 mr-2" />
             Upload Data
-          </Link>
+          </Link> */}
         </nav>
 
         {/* Provider Info and Logout (Desktop) */}

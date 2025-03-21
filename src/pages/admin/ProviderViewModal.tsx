@@ -120,19 +120,27 @@ const ProviderViewModal: React.FC<ProviderViewModalProps> = ({
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <p className="text-sm font-medium text-muted-foreground">ID</p>
+                    <p className="text-xs font-medium uppercase text-muted-foreground">ID</p>
                     <p>{provider.id}</p>
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-muted-foreground">Name</p>
+                    <p className="text-xs font-medium uppercase text-muted-foreground">Name</p>
                     <p>{provider.name}</p>
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-muted-foreground">Age</p>
-                    <p>{provider.age}</p>
+                    <p className="text-xs font-medium uppercase text-muted-foreground">Mobile No</p>
+                    <p>{provider.mobileNo}</p>
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-muted-foreground">Users Count</p>
+                    <p className="text-xs font-medium uppercase text-muted-foreground">License Number</p>
+                    <p>{provider.licenseNumber}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium uppercase text-muted-foreground">Specialization</p>
+                    <p>{provider.specialistIn}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium uppercase text-muted-foreground">Users Count</p>
                     <p>{provider.usersCount}</p>
                   </div>
                 </div>

@@ -396,13 +396,13 @@ export default function ProviderUsers() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>User ID</TableHead>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Age</TableHead>
-                    <TableHead>Gender</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Devices</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableHead className="text-left uppercase">User ID</TableHead>
+                    <TableHead className="text-left uppercase">Name</TableHead>
+                    <TableHead className="text-left uppercase">Age</TableHead>
+                    <TableHead className="text-left uppercase">Gender</TableHead>
+                    <TableHead className="text-left uppercase">Status</TableHead>
+                    <TableHead className="text-left uppercase">Devices</TableHead>
+                    <TableHead className="text-center uppercase">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -432,8 +432,8 @@ export default function ProviderUsers() {
                           )}
                         </div>
                       </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end space-x-2">
+                      <TableCell className="text-center">
+                        <div className="flex justify-center space-x-2">
                           <Button
                             variant="outline"
                             size="sm"

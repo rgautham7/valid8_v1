@@ -108,31 +108,44 @@ export default function Login() {
     setIsLoading(true);
     
     try {
-      const success = await login(identifier, password);
+      // Pass the active tab as the roleType parameter to login
+      const success = await login(identifier, password, activeTab);
       
       if (success) {
         toast.success('Login successful');
         
-        // Redirect based on role
-        if (activeTab === 'admin' || identifier === 'admin') {
+        // Redirect based on the active tab, not the identifier
+        if (activeTab === 'admin') {
           navigate('/admin/dashboard');
-        } else if (activeTab === 'provider' || 
-                  availableProviders.some(p => p.id === identifier || p.mobile === identifier) || 
-                  identifier === 'provider_a@example.com') {
+        } else if (activeTab === 'provider') {
           navigate('/provider/home');
-        } else if (activeTab === 'user' || 
-                  availableUsers.some(u => u.id === identifier || u.mobile === identifier)) {
-          navigate('/user/dashboard');
-        } else {
+        } else if (activeTab === 'user') {
           navigate('/user/dashboard');
         }
       } else {
-        // Check if user exists in localStorage
-        if (activeTab === 'user' && 
-            !availableUsers.some(u => u.id === identifier || u.mobile === identifier)) {
-          toast.error('User not found. Please check your ID or mobile number');
-        } else {
-          toast.error('Invalid credentials');
+        // Show appropriate error message based on the active tab
+        if (activeTab === 'user') {
+          if (identifier === 'admin' || availableProviders.some(p => p.id === identifier || p.mobile === identifier)) {
+            toast.error('Please use the correct tab for this account type');
+          } else if (!availableUsers.some(u => u.id === identifier || u.mobile === identifier)) {
+            toast.error('User not found. Please check your ID or mobile number');
+          } else {
+            toast.error('Invalid credentials');
+          }
+        } else if (activeTab === 'provider') {
+          if (identifier === 'admin' || availableUsers.some(u => u.id === identifier || u.mobile === identifier)) {
+            toast.error('Please use the correct tab for this account type');
+          } else if (!availableProviders.some(p => p.id === identifier || p.mobile === identifier)) {
+            toast.error('Provider not found. Please check your ID or mobile number');
+          } else {
+            toast.error('Invalid credentials');
+          }
+        } else if (activeTab === 'admin') {
+          if (identifier !== 'admin') {
+            toast.error('Admin access only. Use the User or Provider tab for other accounts');
+          } else {
+            toast.error('Invalid admin credentials');
+          }
         }
       }
     } catch (error) {

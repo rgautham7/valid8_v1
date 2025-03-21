@@ -20,20 +20,8 @@ import {
 } from "../../components/ui/dialog";
 import { Label } from '../../components/ui/label';
 import { Textarea } from '../../components/ui/textarea';
-
-// Interface for form data
-interface DeviceTypeFormData {
-  name: string;
-  code: string;
-  manufacturer?: string;
-  countryOfOrigin?: string;
-  yearOfManufacturing?: string;
-  validity?: string;
-  parameters?: string;
-  remarks?: string;
-  manualUrl?: string;
-  videoUrl?: string;
-}
+import DeviceTypeAddModal, { DeviceTypeFormData } from './DeviceTypeAddModal';
+import { Badge } from '../../components/ui/badge';
 
 const DeviceTypeManagement = () => {
   const navigate = useNavigate();
@@ -56,15 +44,16 @@ const DeviceTypeManagement = () => {
   // Form state
   const [formData, setFormData] = useState<DeviceTypeFormData>({
     name: '',
-    code: '',
+    deviceType: '',
+    deviceParameters: [],
     manufacturer: '',
     countryOfOrigin: '',
     yearOfManufacturing: '',
     validity: '',
-    parameters: '',
     remarks: '',
-    manualUrl: '',
-    videoUrl: ''
+    manual: null,
+    video: null,
+    image: null
   });
 
   const breadcrumbItems = [
@@ -137,35 +126,30 @@ const DeviceTypeManagement = () => {
   const resetForm = () => {
     setFormData({
       name: '',
-      code: '',
+      deviceType: '',
+      deviceParameters: [],
       manufacturer: '',
       countryOfOrigin: '',
       yearOfManufacturing: '',
       validity: '',
-      parameters: '',
       remarks: '',
-      manualUrl: '',
-      videoUrl: ''
+      manual: null,
+      video: null,
+      image: null
     });
   };
 
-  const handleAddDeviceType = () => {
+  const handleAddDeviceType = (formData: DeviceTypeFormData) => {
     try {
-      // Validate required fields
-      if (!formData.name || !formData.code) {
-        showToast({
-          title: 'Error',
-          description: 'Name and code are required fields',
-          variant: 'destructive',
-        });
-        return;
-      }
+      // Check for duplicate names
+      const isDuplicate = deviceTypes.some(dt => 
+        dt.name.toLowerCase() === formData.name.toLowerCase()
+      );
       
-      // Check if code already exists
-      if (deviceTypes.some(dt => dt.code === formData.code)) {
+      if (isDuplicate) {
         showToast({
           title: 'Error',
-          description: 'A device type with this code already exists',
+          description: 'A device type with this name already exists',
           variant: 'destructive',
         });
         return;
@@ -175,31 +159,27 @@ const DeviceTypeManagement = () => {
       const newDeviceType: DeviceType = {
         id: `DT${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`,
         name: formData.name,
-        code: formData.code,
+        code: formData.deviceType,
         manufacturer: formData.manufacturer,
         countryOfOrigin: formData.countryOfOrigin,
         yearOfManufacturing: formData.yearOfManufacturing,
         validity: formData.validity,
-        parameters: formData.parameters,
+        parameters: formData.deviceParameters,
         remarks: formData.remarks,
-        manualUrl: formData.manualUrl,
-        videoUrl: formData.videoUrl
+        manualUrl: formData.manual ? URL.createObjectURL(formData.manual) : '',
+        videoUrl: formData.video ? URL.createObjectURL(formData.video) : ''
       };
       
-      // Update state and localStorage
       const updatedDeviceTypes = [...deviceTypes, newDeviceType];
       setDeviceTypes(updatedDeviceTypes);
       localStorage.setItem('deviceTypes', JSON.stringify(updatedDeviceTypes));
       
-      // Show success message
       showToast({
         title: 'Success',
         description: 'Device type added successfully',
       });
       
-      // Close modal and reset form
       setIsModalOpen(false);
-      resetForm();
     } catch (error) {
       console.error('Error adding device type:', error);
       showToast({
@@ -214,78 +194,69 @@ const DeviceTypeManagement = () => {
     setSelectedDeviceType(deviceType);
     setFormData({
       name: deviceType.name,
-      code: deviceType.code,
+      deviceType: deviceType.code,
+      deviceParameters: deviceType.parameters || [],
       manufacturer: deviceType.manufacturer || '',
       countryOfOrigin: deviceType.countryOfOrigin || '',
       yearOfManufacturing: deviceType.yearOfManufacturing || '',
       validity: deviceType.validity || '',
-      parameters: deviceType.parameters || '',
       remarks: deviceType.remarks || '',
-      manualUrl: deviceType.manualUrl || '',
-      videoUrl: deviceType.videoUrl || ''
+      manual: null,
+      video: null,
+      image: null
     });
     setIsEditMode(true);
     setIsModalOpen(true);
   };
 
-  const handleUpdateDeviceType = () => {
+  const handleUpdateDeviceType = (formData: DeviceTypeFormData) => {
     try {
       if (!selectedDeviceType) return;
       
-      // Validate required fields
-      if (!formData.name || !formData.code) {
+      // Check for duplicate names (excluding current device type)
+      const isDuplicate = deviceTypes.some(dt => 
+        dt.id !== selectedDeviceType.id && 
+        dt.name.toLowerCase() === formData.name.toLowerCase()
+      );
+      
+      if (isDuplicate) {
         showToast({
           title: 'Error',
-          description: 'Name and code are required fields',
+          description: 'A device type with this name already exists',
           variant: 'destructive',
         });
         return;
       }
       
-      // Check if code already exists (excluding the current device type)
-      if (deviceTypes.some(dt => dt.code === formData.code && dt.id !== selectedDeviceType.id)) {
-        showToast({
-          title: 'Error',
-          description: 'A device type with this code already exists',
-          variant: 'destructive',
-        });
-        return;
-      }
-      
-      // Update device type
       const updatedDeviceTypes = deviceTypes.map(dt => 
         dt.id === selectedDeviceType.id
           ? {
               ...dt,
               name: formData.name,
-              code: formData.code,
+              code: formData.deviceType,
               manufacturer: formData.manufacturer,
               countryOfOrigin: formData.countryOfOrigin,
               yearOfManufacturing: formData.yearOfManufacturing,
               validity: formData.validity,
-              parameters: formData.parameters,
+              parameters: formData.deviceParameters,
               remarks: formData.remarks,
-              manualUrl: formData.manualUrl,
-              videoUrl: formData.videoUrl
+              manualUrl: formData.manual ? URL.createObjectURL(formData.manual) : dt.manualUrl,
+              videoUrl: formData.video ? URL.createObjectURL(formData.video) : dt.videoUrl
             }
           : dt
       );
       
-      // Update state and localStorage
       setDeviceTypes(updatedDeviceTypes);
       localStorage.setItem('deviceTypes', JSON.stringify(updatedDeviceTypes));
       
-      // Show success message
       showToast({
         title: 'Success',
         description: 'Device type updated successfully',
       });
       
-      // Close modal and reset form
       setIsModalOpen(false);
       setIsEditMode(false);
       setSelectedDeviceType(null);
-      resetForm();
     } catch (error) {
       console.error('Error updating device type:', error);
       showToast({
@@ -419,11 +390,12 @@ const DeviceTypeManagement = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Code</TableHead>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Manufacturer</TableHead>
-                    <TableHead>Validity</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableHead className="text-left uppercase">Code</TableHead>
+                    <TableHead className="text-left uppercase">Name</TableHead>
+                    <TableHead className="text-left uppercase">Manufacturer</TableHead>
+                    <TableHead className="text-left uppercase">Validity</TableHead>
+                    <TableHead className="text-center uppercase">Parameters</TableHead>
+                    <TableHead className="text-center uppercase">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -433,8 +405,30 @@ const DeviceTypeManagement = () => {
                       <TableCell>{deviceType.name}</TableCell>
                       <TableCell>{deviceType.manufacturer || 'N/A'}</TableCell>
                       <TableCell>{deviceType.validity || 'N/A'}</TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end space-x-2">
+                      <TableCell>
+                        <div className="flex flex-wrap gap-1">
+                          {deviceType.parameters ? (
+                            Array.isArray(deviceType.parameters) ? (
+                              deviceType.parameters.map((param, index) => (
+                                <Badge key={index} variant="outline" className="text-xs">
+                                  {param}
+                                </Badge>
+                              ))
+                            ) : (
+                              // Handle legacy string format
+                              deviceType.parameters.split(',').map((param: string, index: number) => (
+                                <Badge key={index} variant="outline" className="text-xs">
+                                  {param.trim()}
+                                </Badge>
+                              ))
+                            )
+                          ) : (
+                            'N/A'
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <div className="flex justify-center space-x-2">
                           <Button
                             variant="outline"
                             size="sm"
@@ -475,155 +469,34 @@ const DeviceTypeManagement = () => {
       </Card>
 
       {/* Add/Edit Modal */}
-      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>{isEditMode ? 'Edit Device Type' : 'Add Device Type'}</DialogTitle>
-            <DialogDescription>
-              {isEditMode 
-                ? 'Update the details of the device type.' 
-                : 'Fill in the details to create a new device type.'}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid items-center grid-cols-4 gap-4">
-              <Label htmlFor="name" className="text-right">
-                Name *
-              </Label>
-              <Input
-                id="name"
-                name="name"
-                value={formData.name}
-                onChange={handleInputChange}
-                className="col-span-3"
-                required
-              />
-            </div>
-            <div className="grid items-center grid-cols-4 gap-4">
-              <Label htmlFor="code" className="text-right">
-                Code *
-              </Label>
-              <Input
-                id="code"
-                name="code"
-                value={formData.code}
-                onChange={handleInputChange}
-                className="col-span-3"
-                required
-              />
-            </div>
-            <div className="grid items-center grid-cols-4 gap-4">
-              <Label htmlFor="manufacturer" className="text-right">
-                Manufacturer
-              </Label>
-              <Input
-                id="manufacturer"
-                name="manufacturer"
-                value={formData.manufacturer}
-                onChange={handleInputChange}
-                className="col-span-3"
-              />
-            </div>
-            <div className="grid items-center grid-cols-4 gap-4">
-              <Label htmlFor="countryOfOrigin" className="text-right">
-                Country of Origin
-              </Label>
-              <Input
-                id="countryOfOrigin"
-                name="countryOfOrigin"
-                value={formData.countryOfOrigin}
-                onChange={handleInputChange}
-                className="col-span-3"
-              />
-            </div>
-            <div className="grid items-center grid-cols-4 gap-4">
-              <Label htmlFor="yearOfManufacturing" className="text-right">
-                Year of Manufacturing
-              </Label>
-              <Input
-                id="yearOfManufacturing"
-                name="yearOfManufacturing"
-                value={formData.yearOfManufacturing}
-                onChange={handleInputChange}
-                className="col-span-3"
-              />
-            </div>
-            <div className="grid items-center grid-cols-4 gap-4">
-              <Label htmlFor="validity" className="text-right">
-                Validity
-              </Label>
-              <Input
-                id="validity"
-                name="validity"
-                value={formData.validity}
-                onChange={handleInputChange}
-                className="col-span-3"
-              />
-            </div>
-            <div className="grid items-center grid-cols-4 gap-4">
-              <Label htmlFor="parameters" className="text-right">
-                Parameters
-              </Label>
-              <Textarea
-                id="parameters"
-                name="parameters"
-                value={formData.parameters}
-                onChange={handleInputChange}
-                className="col-span-3"
-              />
-            </div>
-            <div className="grid items-center grid-cols-4 gap-4">
-              <Label htmlFor="remarks" className="text-right">
-                Remarks
-              </Label>
-              <Textarea
-                id="remarks"
-                name="remarks"
-                value={formData.remarks}
-                onChange={handleInputChange}
-                className="col-span-3"
-              />
-            </div>
-            <div className="grid items-center grid-cols-4 gap-4">
-              <Label htmlFor="manualUrl" className="text-right">
-                Manual URL
-              </Label>
-              <Input
-                id="manualUrl"
-                name="manualUrl"
-                value={formData.manualUrl}
-                onChange={handleInputChange}
-                className="col-span-3"
-              />
-            </div>
-            <div className="grid items-center grid-cols-4 gap-4">
-              <Label htmlFor="videoUrl" className="text-right">
-                Video URL
-              </Label>
-              <Input
-                id="videoUrl"
-                name="videoUrl"
-                value={formData.videoUrl}
-                onChange={handleInputChange}
-                className="col-span-3"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => {
+      <DeviceTypeAddModal 
+        isOpen={isModalOpen}
+        onClose={() => {
               setIsModalOpen(false);
-              resetForm();
               setIsEditMode(false);
               setSelectedDeviceType(null);
-            }}>
-              Cancel
-            </Button>
-            <Button onClick={isEditMode ? handleUpdateDeviceType : handleAddDeviceType}>
-              {isEditMode ? 'Update' : 'Add'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        }}
+        onSubmit={(formData: DeviceTypeFormData) => {
+          if (isEditMode) {
+            handleUpdateDeviceType(formData);
+          } else {
+            handleAddDeviceType(formData);
+          }
+        }}
+        initialData={selectedDeviceType ? {
+          deviceType: selectedDeviceType.name,
+          deviceParameters: selectedDeviceType.parameters || [],
+          manufacturer: selectedDeviceType.manufacturer || '',
+          countryOfOrigin: selectedDeviceType.countryOfOrigin || '',
+          yearOfManufacturing: selectedDeviceType.yearOfManufacturing || '',
+          validity: selectedDeviceType.validity || '',
+          remarks: selectedDeviceType.remarks || '',
+          image: null,
+          video: null,
+          manual: null
+        } : undefined}
+        isEditMode={isEditMode}
+      />
 
       {/* View Modal */}
       <Dialog open={isViewModalOpen} onOpenChange={setIsViewModalOpen}>

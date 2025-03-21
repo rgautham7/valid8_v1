@@ -24,9 +24,12 @@ const ProviderAddModal: React.FC<ProviderAddModalProps> = ({
   const [formData, setFormData] = useState<Provider>({
     id: '',
     name: '',
-    age: 0,
+    hospital: '',
+    licenseNumber: '',
+    specialistIn: '',
     deviceTypes: [],
-    usersCount: 0
+    usersCount: 0,
+    mobileNo: ''
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   
@@ -54,9 +57,12 @@ const ProviderAddModal: React.FC<ProviderAddModalProps> = ({
       setFormData({
         id: newId,
         name: '',
-        age: 0,
+        hospital: '',
+        licenseNumber: '',
+        specialistIn: '',
         deviceTypes: [],
-        usersCount: 0
+        usersCount: 0,
+        mobileNo: ''
       });
     }
   }, [provider]);
@@ -65,18 +71,10 @@ const ProviderAddModal: React.FC<ProviderAddModalProps> = ({
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     
-    if (name === 'age') {
-      const ageValue = parseInt(value);
-      setFormData({
-        ...formData,
-        [name]: isNaN(ageValue) ? 0 : ageValue
-      });
-    } else {
-      setFormData({
-        ...formData,
-        [name]: value
-      });
-    }
+    setFormData({
+      ...formData,
+      [name]: value
+    });
     
     // Clear error when field is edited
     if (errors[name]) {
@@ -110,12 +108,16 @@ const ProviderAddModal: React.FC<ProviderAddModalProps> = ({
       newErrors.name = 'Name is required';
     }
     
-    if (formData.age <= 0) {
-      newErrors.age = 'Age must be greater than 0';
+    if (!formData.hospital.trim()) {
+      newErrors.hospital = 'Hospital is required';
     }
     
-    if (formData.age > 100) {
-      newErrors.age = 'Age must be less than or equal to 100';
+    if (!formData.licenseNumber.trim()) {
+      newErrors.licenseNumber = 'License number is required';
+    }
+    
+    if (!formData.specialistIn.trim()) {
+      newErrors.specialistIn = 'Specialization is required';
     }
     
     setErrors(newErrors);
@@ -147,7 +149,6 @@ const ProviderAddModal: React.FC<ProviderAddModalProps> = ({
             size="icon"
             onClick={onClose}
           >
-            <X className="w-4 h-4" />
           </Button>
         </DialogHeader>
         
@@ -185,22 +186,55 @@ const ProviderAddModal: React.FC<ProviderAddModalProps> = ({
             </div>
             
             <div className="grid items-center grid-cols-4 gap-4">
-              <Label htmlFor="age" className="text-right">
-                Age
+              <Label htmlFor="hospital" className="text-right">
+                Hospital
               </Label>
               <div className="col-span-3">
                 <Input
-                  id="age"
-                  name="age"
-                  type="number"
-                  value={formData.age}
+                  id="hospital"
+                  name="hospital"
+                  value={formData.hospital}
                   onChange={handleChange}
-                  placeholder="Enter provider age"
-                  min="1"
-                  max="100"
+                  placeholder="Enter hospital name"
                 />
-                {errors.age && (
-                  <p className="mt-1 text-sm text-red-500">{errors.age}</p>
+                {errors.hospital && (
+                  <p className="mt-1 text-sm text-red-500">{errors.hospital}</p>
+                )}
+              </div>
+            </div>
+            
+            <div className="grid items-center grid-cols-4 gap-4">
+              <Label htmlFor="licenseNumber" className="text-right">
+                License Number
+              </Label>
+              <div className="col-span-3">
+                <Input
+                  id="licenseNumber"
+                  name="licenseNumber"
+                  value={formData.licenseNumber}
+                  onChange={handleChange}
+                  placeholder="Enter license number"
+                />
+                {errors.licenseNumber && (
+                  <p className="mt-1 text-sm text-red-500">{errors.licenseNumber}</p>
+                )}
+              </div>
+            </div>
+            
+            <div className="grid items-center grid-cols-4 gap-4">
+              <Label htmlFor="specialistIn" className="text-right">
+                Specialization
+              </Label>
+              <div className="col-span-3">
+                <Input
+                  id="specialistIn"
+                  name="specialistIn"
+                  value={formData.specialistIn}
+                  onChange={handleChange}
+                  placeholder="Enter specialization"
+                />
+                {errors.specialistIn && (
+                  <p className="mt-1 text-sm text-red-500">{errors.specialistIn}</p>
                 )}
               </div>
             </div>

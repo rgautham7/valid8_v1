@@ -11,7 +11,7 @@ interface AuthContextType {
   logout: () => void;
   userRole: 'provider' | 'user' | 'admin' | null;
   setUserRole: (role: 'provider' | 'user' | 'admin' | null) => void;
-  login: (usernameOrMobile: string, password: string) => Promise<boolean>;
+  login: (usernameOrMobile: string, password: string, roleType: 'user' | 'provider' | 'admin') => Promise<boolean>;
   userData: User | null;
   providerData: Provider | null;
 }
@@ -110,9 +110,57 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }, []);
 
-  const login = async (usernameOrMobile: string, password: string): Promise<boolean> => {
-    // Admin login
-    if (usernameOrMobile === 'admin' && password === 'admin123') {
+  const isValidAdminCredentials = (username: string, password: string): boolean => {
+    return username === 'admin' && password === 'admin123';
+  };
+
+  const isValidProviderCredentials = (identifier: string, password: string): boolean => {
+    if (password !== 'provider123') return false;
+    
+    // Check if it's a legacy provider
+    if (identifier === 'provider_a@example.com') return true;
+    
+    // Check if it matches any provider in localStorage
+    try {
+      const providersData = localStorage.getItem('providers');
+      if (providersData) {
+        const providers = JSON.parse(providersData);
+        return providers.some((provider: Provider) => 
+          provider.id === identifier || provider.mobileNo === identifier
+        );
+      }
+    } catch (error) {
+      console.error('Error checking provider data:', error);
+    }
+    
+    return false;
+  };
+
+  const isValidUserCredentials = (identifier: string, password: string): boolean => {
+    if (password !== 'user123') return false;
+    
+    // Check if it's a legacy user
+    if (identifier === 'user1@example.com') return true;
+    
+    // Check if it matches any user in localStorage
+    try {
+      const usersData = localStorage.getItem('users');
+      if (usersData) {
+        const users = JSON.parse(usersData);
+        return users.some((user: User) => 
+          user.id === identifier || user.mobileNo === identifier
+        );
+      }
+    } catch (error) {
+      console.error('Error checking user data:', error);
+    }
+    
+    return false;
+  };
+
+  const login = async (usernameOrMobile: string, password: string, roleType: 'user' | 'provider' | 'admin'): Promise<boolean> => {
+    // Admin login - only if roleType is admin
+    if (roleType === 'admin' && usernameOrMobile === 'admin' && password === 'admin123') {
       setIsAuthenticated(true);
       setUserRole('admin');
       setProviderId(null);
@@ -131,115 +179,119 @@ const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       return true;
     }
     
-    // Provider login - check if input matches any provider ID or mobile number in localStorage
-    try {
-      const providersData = localStorage.getItem('providers');
-      if (providersData) {
-        const providers = JSON.parse(providersData);
-        const providerMatch = providers.find((provider: Provider) => 
-          provider.id === usernameOrMobile || provider.mobileNo === usernameOrMobile
-        );
+    // Provider login - only if roleType is provider
+    if (roleType === 'provider') {
+      try {
+        const providersData = localStorage.getItem('providers');
+        if (providersData) {
+          const providers = JSON.parse(providersData);
+          const providerMatch = providers.find((provider: Provider) => 
+            provider.id === usernameOrMobile || provider.mobileNo === usernameOrMobile
+          );
+          
+          if (providerMatch && password === 'provider123') {
+            setIsAuthenticated(true);
+            setUserRole('provider');
+            setProviderId(providerMatch.id);
+            setUserId(null);
+            setUserData(null);
+            setProviderData(providerMatch);
+            
+            // Store auth data
+            localStorage.setItem('authData', JSON.stringify({
+              isAuthenticated: true,
+              userRole: 'provider',
+              providerId: providerMatch.id,
+              userId: null
+            }));
+            
+            return true;
+          }
+        }
         
-        if (providerMatch && password === 'provider123') {
+        // Legacy provider login
+        if (usernameOrMobile === 'provider_a@example.com' && password === 'provider123') {
+          const providerId = 'PRV_A';
           setIsAuthenticated(true);
           setUserRole('provider');
-          setProviderId(providerMatch.id);
+          setProviderId(providerId);
           setUserId(null);
           setUserData(null);
-          setProviderData(providerMatch);
+          
+          // Load provider data
+          const provider = loadProviderData(providerId);
           
           // Store auth data
           localStorage.setItem('authData', JSON.stringify({
             isAuthenticated: true,
             userRole: 'provider',
-            providerId: providerMatch.id,
+            providerId: providerId,
             userId: null
           }));
           
           return true;
         }
+      } catch (error) {
+        console.error('Error checking provider data:', error);
       }
-    } catch (error) {
-      console.error('Error checking provider data:', error);
     }
     
-    // Legacy provider login
-    if (usernameOrMobile === 'provider_a@example.com' && password === 'provider123') {
-      const providerId = 'PRV_A';
-      setIsAuthenticated(true);
-      setUserRole('provider');
-      setProviderId(providerId);
-      setUserId(null);
-      setUserData(null);
-      
-      // Load provider data
-      const provider = loadProviderData(providerId);
-      
-      // Store auth data
-      localStorage.setItem('authData', JSON.stringify({
-        isAuthenticated: true,
-        userRole: 'provider',
-        providerId: providerId,
-        userId: null
-      }));
-      
-      return true;
-    }
-    
-    // User login - check if input matches any user ID or mobile number in localStorage
-    try {
-      const usersData = localStorage.getItem('users');
-      if (usersData) {
-        const users = JSON.parse(usersData);
-        const userMatch = users.find((user: User) => 
-          user.id === usernameOrMobile || user.mobileNo === usernameOrMobile
-        );
+    // User login - only if roleType is user
+    if (roleType === 'user') {
+      try {
+        const usersData = localStorage.getItem('users');
+        if (usersData) {
+          const users = JSON.parse(usersData);
+          const userMatch = users.find((user: User) => 
+            user.id === usernameOrMobile || user.mobileNo === usernameOrMobile
+          );
+          
+          if (userMatch && password === 'user123') {
+            setIsAuthenticated(true);
+            setUserRole('user');
+            setProviderId(userMatch.providerId);
+            setUserId(userMatch.id);
+            setUserData(userMatch);
+            setProviderData(null);
+            
+            // Store auth data
+            localStorage.setItem('authData', JSON.stringify({
+              isAuthenticated: true,
+              userRole: 'user',
+              providerId: userMatch.providerId,
+              userId: userMatch.id
+            }));
+            
+            return true;
+          }
+        }
         
-        if (userMatch && password === 'user123') {
+        // Legacy user login
+        if (usernameOrMobile === 'user1@example.com' && password === 'user123') {
+          const userId = 'USR_A1';
           setIsAuthenticated(true);
           setUserRole('user');
-          setProviderId(userMatch.providerId);
-          setUserId(userMatch.id);
-          setUserData(userMatch);
-          setProviderData(null);
+          setUserId(userId);
+          
+          // Load user data
+          const user = loadUserData(userId);
+          if (user) {
+            setProviderId(user.providerId);
+          }
           
           // Store auth data
           localStorage.setItem('authData', JSON.stringify({
             isAuthenticated: true,
             userRole: 'user',
-            providerId: userMatch.providerId,
-            userId: userMatch.id
+            providerId: user?.providerId || null,
+            userId: userId
           }));
           
           return true;
         }
+      } catch (error) {
+        console.error('Error checking user data:', error);
       }
-    } catch (error) {
-      console.error('Error checking user data:', error);
-    }
-    
-    // Legacy user login
-    if (usernameOrMobile === 'user1@example.com' && password === 'user123') {
-      const userId = 'USR_A1';
-      setIsAuthenticated(true);
-      setUserRole('user');
-      setUserId(userId);
-      
-      // Load user data
-      const user = loadUserData(userId);
-      if (user) {
-        setProviderId(user.providerId);
-      }
-      
-      // Store auth data
-      localStorage.setItem('authData', JSON.stringify({
-        isAuthenticated: true,
-        userRole: 'user',
-        providerId: user?.providerId || null,
-        userId: userId
-      }));
-      
-      return true;
     }
     
     return false;

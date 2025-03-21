@@ -7,7 +7,7 @@ export const deviceTypes: DeviceType[] = [
     code: 'glucose-regulator',
     countryOfOrigin: 'India',
     manufacturer: 'ABC Medical',
-    parameters: 'glucose level, insulin rate',
+    parameters: ['glucose level', 'insulin rate'],
     yearOfManufacturing: '2023',
     validity: '2028-05-15',
     remarks: 'Latest model with Bluetooth connectivity',
@@ -19,7 +19,7 @@ export const deviceTypes: DeviceType[] = [
     code: 'pulse-regulator',
     countryOfOrigin: 'USA',
     manufacturer: 'MedTech Inc',
-    parameters: 'pulse rate, oxygen level',
+    parameters: ['pulse rate', 'oxygen level'],
     yearOfManufacturing: '2023',
     validity: '2028-03-20',
     remarks: 'Advanced model with mobile app integration',
@@ -31,7 +31,7 @@ export const deviceTypes: DeviceType[] = [
     code: 'pressure-regulator',
     countryOfOrigin: 'Germany',
     manufacturer: 'PressureTech GmbH',
-    parameters: 'systolic, diastolic',
+    parameters: ['systolic', 'diastolic'],
     yearOfManufacturing: '2023',
     validity: '2028-01-10',
     remarks: 'Includes cloud data storage',
@@ -43,7 +43,9 @@ export const providers: Provider[] = [
   {
     id: 'PRV_A',
     name: 'Dr. Alice Anderson',
-    age: 42,
+    hospital: 'City General Hospital',
+    licenseNumber: 'LIC123456',
+    specialistIn: 'Cardiology',
     deviceTypes: ['glucose-regulator'],
     usersCount: 2,
     mobileNo: '9876543210'
@@ -51,7 +53,9 @@ export const providers: Provider[] = [
   {
     id: 'PRV_B',
     name: 'Dr. Bob Brown',
-    age: 45,
+    hospital: 'Metro Medical Center',
+    licenseNumber: 'LIC234567',
+    specialistIn: 'Endocrinology',
     deviceTypes: ['glucose-regulator', 'pulse-regulator'],
     usersCount: 3,
     mobileNo: '9876543211'
@@ -59,7 +63,9 @@ export const providers: Provider[] = [
   {
     id: 'PRV_C',
     name: 'Dr. Carol Chen',
-    age: 38,
+    hospital: 'Central Hospital',
+    licenseNumber: 'LIC345678',
+    specialistIn: 'Internal Medicine',
     deviceTypes: ['glucose-regulator', 'pressure-regulator'],
     usersCount: 2,
     mobileNo: '9876543212'
@@ -67,7 +73,9 @@ export const providers: Provider[] = [
   {
     id: 'PRV_D',
     name: 'Dr. David Davis',
-    age: 50,
+    hospital: 'Regional Medical Center',
+    licenseNumber: 'LIC456789',
+    specialistIn: 'Cardiology',
     deviceTypes: ['pulse-regulator', 'pressure-regulator'],
     usersCount: 2,
     mobileNo: '9876543213'
@@ -75,7 +83,9 @@ export const providers: Provider[] = [
   {
     id: 'PRV_E',
     name: 'Dr. Emma Evans',
-    age: 41,
+    hospital: 'Community Health Center',
+    licenseNumber: 'LIC567890',
+    specialistIn: 'General Medicine',
     deviceTypes: ['pressure-regulator'],
     usersCount: 1,
     mobileNo: '9876543214'
@@ -629,5 +639,34 @@ function updateLocalStorageWithMobileNumbers() {
   } else {
     // If no existing data, use mock data
     localStorage.setItem('users', JSON.stringify(users));
+  }
+
+  // Add the call to migrate parameters to arrays
+  migrateParametersToArray();
+}
+
+// Add a function to migrate existing parameters data in localStorage
+export function migrateParametersToArray() {
+  const existingDeviceTypes = localStorage.getItem('deviceTypes');
+  if (existingDeviceTypes) {
+    try {
+      const deviceTypes = JSON.parse(existingDeviceTypes);
+      // Convert string parameters to arrays
+      const updatedDeviceTypes = deviceTypes.map((deviceType: any) => {
+        if (deviceType.parameters && typeof deviceType.parameters === 'string') {
+          // Convert comma-separated string to array and trim each value
+          return {
+            ...deviceType,
+            parameters: deviceType.parameters.split(',').map((param: string) => param.trim()).filter((p: string) => p)
+          };
+        }
+        return deviceType;
+      });
+      localStorage.setItem('deviceTypes', JSON.stringify(updatedDeviceTypes));
+    } catch (error) {
+      console.error('Error migrating parameters to array:', error);
+      // If error, replace with new mock data
+      localStorage.setItem('deviceTypes', JSON.stringify(deviceTypes));
+    }
   }
 } 
