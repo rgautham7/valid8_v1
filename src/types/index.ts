@@ -23,6 +23,11 @@ export interface User {
   activity: 'Active' | 'Inactive';
   devices: UserDevice[];
   mobileNo: string;
+  frequency?: string;
+  email?: string;
+  registeredOn?: string;
+  lastActiveOn?: string;
+  remarks?: string;
 }
 
 export interface UserDevice {
@@ -41,6 +46,7 @@ export interface Provider {
   deviceTypes: string[];
   usersCount: number;
   mobileNo: string;
+  allocatedDevices?: string[]; // New field: Array of device IDs allocated to this provider
 }
 
 export interface Reading {
@@ -84,6 +90,7 @@ export interface Device {
   allocation: 'allocated' | 'not allocated';
   allocatedTo?: string;  // User ID if allocated
   lastUsedOn?: string;   // Last usage timestamp
+  providerAllocation?: string; // New field: Provider ID this device is allocated to
 }
 
 // Add this new interface for device usage tracking

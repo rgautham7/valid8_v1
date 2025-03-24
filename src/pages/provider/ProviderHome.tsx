@@ -20,12 +20,12 @@ import {
 // UI Components
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
+import {
+  Card,
+  CardContent,
+  CardDescription,
   CardFooter, 
-  CardHeader, 
+  CardHeader,
   CardTitle 
 } from '../../components/ui/card';
 import {
@@ -55,6 +55,7 @@ import {
 // Custom Components
 import UserDetailsPopup from '../../components/provider/UserDetailsPopup';
 import DeviceAllocationPopup from '../../components/provider/DeviceAllocationPopup';
+import { toast } from 'react-hot-toast';
 
 export default function ProviderHome() {
   const navigate = useNavigate();
@@ -84,6 +85,7 @@ export default function ProviderHome() {
   const [selectedDeviceType, setSelectedDeviceType] = useState<string>('');
   const [availableDevices, setAvailableDevices] = useState<Device[]>([]);
   const [deviceSearchTerm, setDeviceSearchTerm] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
   
   // Check authentication and redirect if needed
   useEffect(() => {
@@ -102,9 +104,9 @@ export default function ProviderHome() {
   // Filter users when search term or filter status changes
   useEffect(() => {
     if (!users.length) return;
-    
+
     let filtered = [...users];
-    
+
     // Apply search filter
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
@@ -113,7 +115,7 @@ export default function ProviderHome() {
         user.id.toLowerCase().includes(term)
       );
     }
-    
+
     // Apply status filter
     if (filterStatus !== 'all') {
       filtered = filtered.filter(user => 
@@ -200,63 +202,50 @@ export default function ProviderHome() {
   
   // Toggle user activity status
   const toggleUserActivity = async (user: User) => {
+    setIsProcessing(true);
+    
     try {
-      // Get all users from localStorage
+      const newActivity = user.activity === 'Active' ? 'Inactive' : 'Active';
+      
+      // Update user in localStorage
       const usersData = localStorage.getItem('users');
-      if (!usersData) return;
+      if (!usersData) {
+        throw new Error('User data not available');
+      }
       
-      const allUsers = JSON.parse(usersData);
-      
-      // Find and update the user
-      const updatedUsers = allUsers.map((u: User) => {
-        if (u.id === user.id) {
-          return {
-            ...u,
-            activity: u.activity === 'Active' ? 'Inactive' : 'Active'
-          };
-        }
-        return u;
-      });
-      
-      // Save back to localStorage
-      localStorage.setItem('users', JSON.stringify(updatedUsers));
-      
-      // Update local state
-      setUsers(prev => 
-        prev.map(u => {
-          if (u.id === user.id) {
-            return {
-              ...u,
-              activity: u.activity === 'Active' ? 'Inactive' : 'Active'
-            };
-          }
-          return u;
-        })
+      const allUsers: User[] = JSON.parse(usersData);
+      const updatedUsers = allUsers.map(u => 
+        u.id === user.id 
+          ? { ...u, activity: newActivity } 
+          : u
       );
       
-      // Recalculate statistics
-      const activeUsers = updatedUsers.filter((u: User) => 
-        u.providerId === providerData?.id && u.activity === 'Active'
-      ).length;
+      localStorage.setItem('users', JSON.stringify(updatedUsers));
+        
+        // Update local state
+      setUsers(prev => 
+        prev.map(u => 
+          u.id === user.id 
+            ? { ...u, activity: newActivity } 
+            : u
+        )
+      );
       
-      const providerUsers = updatedUsers.filter((u: User) => u.providerId === providerData?.id);
-      
-      setStatistics(prev => ({
-        ...prev,
-        activeUsers,
-        inactiveUsers: providerUsers.length - activeUsers
-      }));
+      toast.success(`User ${user.name} is now ${newActivity}`);
     } catch (error) {
       console.error('Error toggling user activity:', error);
+      toast.error('Failed to update user status');
+    } finally {
+      setIsProcessing(false);
     }
   };
-  
+
   // View user details
   const viewUserDetails = (user: User) => {
     setSelectedUser(user);
     setShowUserDetails(true);
   };
-  
+
   // Calculate statistics
   const calculateStatistics = () => {
     if (!users.length || !devices.length) return;
@@ -535,7 +524,7 @@ export default function ProviderHome() {
       device.id.toLowerCase().includes(term)
     );
   };
-  
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -546,7 +535,7 @@ export default function ProviderHome() {
       </div>
     );
   }
-  
+
   if (!providerData) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -555,7 +544,7 @@ export default function ProviderHome() {
           <p className="mb-4">Unable to load your provider information. Please try logging in again.</p>
           <Button onClick={() => navigate('/login/provider')}>
             Go to Login
-          </Button>
+              </Button>
         </div>
       </div>
     );
@@ -676,7 +665,7 @@ export default function ProviderHome() {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
-            </div>
+      </div>
             
             {/* Filter */}
             <Select
@@ -695,7 +684,7 @@ export default function ProviderHome() {
           </div>
         </div>
         
-        {/* Users Table */}
+          {/* Users Table */}
         <div className="overflow-hidden bg-white border rounded-lg">
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
@@ -749,8 +738,8 @@ export default function ProviderHome() {
                             </div>
                           ) : (
                             <span className="text-xs text-gray-400">No devices</span>
-                          )}
-                        </div>
+              )}
+          </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`inline-flex px-2 text-xs font-semibold leading-5 rounded-full ${
@@ -801,7 +790,7 @@ export default function ProviderHome() {
                         {searchTerm || filterStatus !== 'all' 
                           ? 'No users match your search criteria' 
                           : 'No users found'}
-                      </div>
+          </div>
                     </td>
                   </tr>
                 )}
@@ -812,7 +801,7 @@ export default function ProviderHome() {
       </div>
       
       {/* Device Types Section */}
-      <div>
+                <div>
         <h2 className="mb-4 text-2xl font-bold">Device Types</h2>
         
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -828,11 +817,11 @@ export default function ProviderHome() {
                     <span className="text-sm text-gray-500">Total Devices:</span>
                     <span className="font-medium">{type.totalCount}</span>
                   </div>
-                  <div className="flex justify-between">
+                    <div className="flex justify-between">
                     <span className="text-sm text-gray-500">Allocated:</span>
                     <span className="font-medium">{type.allocatedCount}</span>
-                  </div>
-                  <div className="flex justify-between">
+                </div>
+                    <div className="flex justify-between">
                     <span className="text-sm text-gray-500">Available:</span>
                     <span className="font-medium">{type.availableCount}</span>
                   </div>
@@ -842,7 +831,7 @@ export default function ProviderHome() {
           ))}
         </div>
       </div>
-      
+
       {/* User Details Popup */}
       {selectedUser && (
         <UserDetailsPopup
@@ -899,7 +888,7 @@ export default function ProviderHome() {
                         Manufactured: {new Date(device.yearOfManufacturing).getFullYear()}
                       </div>
                     </div>
-                    <div>
+              <div>
                       <span className="inline-flex px-2 text-xs font-semibold leading-5 text-green-800 bg-green-100 rounded-full">
                         Available
                       </span>
@@ -910,9 +899,9 @@ export default function ProviderHome() {
             ) : (
               <div className="p-4 text-center text-gray-500">
                 No available devices found
-              </div>
-            )}
-          </div>
+        </div>
+                )}
+                      </div>
           
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowDeviceAllocation(false)}>
@@ -925,8 +914,8 @@ export default function ProviderHome() {
               Allocate Device
             </Button>
           </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </DialogContent>
+        </Dialog>
     </div>
   );
 }

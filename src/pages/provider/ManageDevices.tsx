@@ -206,9 +206,14 @@ export default function ManageDevices() {
     });
     
     // Filter to only show devices that are:
-    // 1. Not allocated to any user (available for this provider to allocate)
-    // 2. Allocated to users of this provider
+    // 1. Allocated to this provider (from the providerAllocation field)
+    // 2. Either not allocated to any user OR allocated to users of this provider
     const providerDevices = typeDevices.filter(device => {
+      // Must be allocated to this provider
+      if (device.providerAllocation !== providerId) {
+        return false;
+      }
+      
       // Include unallocated devices
       if (device.allocation === 'not allocated') {
         return true;
@@ -362,10 +367,10 @@ export default function ManageDevices() {
                   <CardHeader className="flex flex-row items-center justify-between pb-2">
                     <CardTitle className="text-sm font-medium">
                       Available Devices
-                    </CardTitle>
+          </CardTitle>
                     <XCircle className="w-4 h-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
+        </CardHeader>
+        <CardContent>
                     <div className="text-2xl font-bold">
                       {deviceTypeStats.reduce((sum, stat) => sum + stat.available, 0)}
                     </div>
@@ -417,20 +422,20 @@ export default function ManageDevices() {
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center space-x-2">
                 <span className="text-sm font-medium">Filter:</span>
-                <Select
-                  value={allocationFilter}
+            <Select
+              value={allocationFilter}
                   onValueChange={(value) => setAllocationFilter(value as 'all' | 'allocated' | 'available')}
-                >
+            >
                   <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="Filter by allocation" />
-                  </SelectTrigger>
-                  <SelectContent>
+                <SelectValue placeholder="Filter by allocation" />
+              </SelectTrigger>
+              <SelectContent>
                     <SelectItem value="all">All Devices</SelectItem>
                     <SelectItem value="allocated">Allocated Devices</SelectItem>
                     <SelectItem value="available">Available Devices</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+              </SelectContent>
+            </Select>
+          </div>
               <div className="text-sm text-muted-foreground">
                 Showing {getFilteredDeviceList().length} of {filteredDevices.length} devices
               </div>

@@ -320,11 +320,11 @@ const DeviceManagement: React.FC = () => {
   };
   
   // Get user name from ID
-  const getUserName = (userId?: string) => {
-    if (!userId) return 'Not allocated';
+  const getProviderName = (providerId?: string) => {
+    if (!providerId) return 'Not allocated';
     
-    const user = users.find(u => u.id === userId);
-    return user ? user.name : 'Unknown User';
+    const provider = providers.find(p => p.id === providerId);
+    return provider ? provider.name : 'Unknown Provider';
   };
   
   // Handle back navigation
@@ -442,7 +442,6 @@ const DeviceManagement: React.FC = () => {
                     <TableHead>Allocation</TableHead>
                     <TableHead>Allocated To</TableHead>
                     <TableHead>Last Used</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -465,9 +464,9 @@ const DeviceManagement: React.FC = () => {
                           {device.allocation}
                         </Badge>
                       </TableCell>
-                      <TableCell>{getUserName(device.allocatedTo)}</TableCell>
+                      <TableCell>{getProviderName(device.providerAllocation)}</TableCell>
                       <TableCell>{device.lastUsedOn || 'N/A'}</TableCell>
-                      <TableCell className="text-right">
+                      {/* <TableCell className="text-right">
                         {device.allocation === 'allocated' ? (
                           <Button
                             variant="outline"
@@ -485,7 +484,7 @@ const DeviceManagement: React.FC = () => {
                             <CheckCircle className="w-4 h-4 mr-1" /> Allocate
                           </Button>
                         )}
-                      </TableCell>
+                      </TableCell> */}
                     </TableRow>
                   ))}
                 </TableBody>
@@ -580,7 +579,7 @@ const DeviceManagement: React.FC = () => {
             {deviceToDeallocate && (
               <div className="space-y-2">
                 <p><strong>Device ID:</strong> {deviceToDeallocate.id}</p>
-                <p><strong>Currently allocated to:</strong> {getUserName(deviceToDeallocate.allocatedTo)}</p>
+                <p><strong>Currently allocated to:</strong> {getProviderName(deviceToDeallocate.providerAllocation)}</p>
               </div>
             )}
           </div>

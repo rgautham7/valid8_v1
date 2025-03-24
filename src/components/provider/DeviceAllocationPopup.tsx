@@ -103,10 +103,16 @@ const DeviceAllocationPopup: React.FC<DeviceAllocationPopupProps> = ({
 
   // Filter available devices by search term
   const getFilteredAvailableDevices = () => {
-    if (!deviceSearchTerm) return availableDevices;
+    // Initial filtering by provider allocation
+    const providerDevices = availableDevices.filter(device =>
+      device.providerAllocation === providerId
+    );
+    
+    // Then apply search filter
+    if (!deviceSearchTerm) return providerDevices;
     
     const term = deviceSearchTerm.toLowerCase();
-    return availableDevices.filter(device => 
+    return providerDevices.filter(device => 
       device.id.toLowerCase().includes(term)
     );
   };

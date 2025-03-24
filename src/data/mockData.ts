@@ -48,7 +48,8 @@ export const providers: Provider[] = [
     specialistIn: 'Cardiology',
     deviceTypes: ['glucose-regulator'],
     usersCount: 2,
-    mobileNo: '9876543210'
+    mobileNo: '9876543210',
+    allocatedDevices: ['GR_001', 'GR_002']
   },
   {
     id: 'PRV_B',
@@ -58,7 +59,8 @@ export const providers: Provider[] = [
     specialistIn: 'Endocrinology',
     deviceTypes: ['glucose-regulator', 'pulse-regulator'],
     usersCount: 3,
-    mobileNo: '9876543211'
+    mobileNo: '9876543211',
+    allocatedDevices: ['GR_003', 'GR_004', 'PR_001', 'PR_002']
   },
   {
     id: 'PRV_C',
@@ -68,7 +70,8 @@ export const providers: Provider[] = [
     specialistIn: 'Internal Medicine',
     deviceTypes: ['glucose-regulator', 'pressure-regulator'],
     usersCount: 2,
-    mobileNo: '9876543212'
+    mobileNo: '9876543212',
+    allocatedDevices: ['GR_005', 'PSR_001', 'PSR_002']
   },
   {
     id: 'PRV_D',
@@ -78,7 +81,8 @@ export const providers: Provider[] = [
     specialistIn: 'Cardiology',
     deviceTypes: ['pulse-regulator', 'pressure-regulator'],
     usersCount: 2,
-    mobileNo: '9876543213'
+    mobileNo: '9876543213',
+    allocatedDevices: ['PR_003', 'PR_004', 'PSR_003']
   },
   {
     id: 'PRV_E',
@@ -88,7 +92,8 @@ export const providers: Provider[] = [
     specialistIn: 'General Medicine',
     deviceTypes: ['pressure-regulator'],
     usersCount: 1,
-    mobileNo: '9876543214'
+    mobileNo: '9876543214',
+    allocatedDevices: ['PSR_004']
   }
 ];
 
@@ -102,6 +107,7 @@ export const users: User[] = [
     providerId: 'PRV_A',
     activity: 'Active',
     mobileNo: '9876500001',
+    frequency: 'Daily',
     devices: [
       {
         deviceId: 'GR_001',
@@ -119,6 +125,7 @@ export const users: User[] = [
     providerId: 'PRV_A',
     activity: 'Active',
     mobileNo: '9876500002',
+    frequency: 'Twice a week',
     devices: [
       {
         deviceId: 'GR_002',
@@ -138,6 +145,7 @@ export const users: User[] = [
     providerId: 'PRV_B',
     activity: 'Active',
     mobileNo: '9876500003',
+    frequency: 'Once a week',
     devices: [
       {
         deviceId: 'GR_003',
@@ -161,6 +169,7 @@ export const users: User[] = [
     providerId: 'PRV_B',
     activity: 'Active',
     mobileNo: '9876500004',
+    frequency: 'Daily',
     devices: [
       {
         deviceId: 'GR_004',
@@ -178,6 +187,7 @@ export const users: User[] = [
     providerId: 'PRV_B',
     activity: 'Inactive',
     mobileNo: '9876500005',
+    frequency: 'Twice a week',
     devices: [
       {
         deviceId: 'PR_002',
@@ -197,6 +207,7 @@ export const users: User[] = [
     providerId: 'PRV_C',
     activity: 'Active',
     mobileNo: '9876500006',
+    frequency: 'Daily',
     devices: [
       {
         deviceId: 'GR_005',
@@ -220,6 +231,7 @@ export const users: User[] = [
     providerId: 'PRV_C',
     activity: 'Active',
     mobileNo: '9876500007',
+    frequency: 'Twice a week',
     devices: [
       {
         deviceId: 'PSR_002',
@@ -239,6 +251,7 @@ export const users: User[] = [
     providerId: 'PRV_D',
     activity: 'Active',
     mobileNo: '9876500008',
+    frequency: 'Daily',
     devices: [
       {
         deviceId: 'PR_003',
@@ -256,6 +269,7 @@ export const users: User[] = [
     providerId: 'PRV_D',
     activity: 'Active',
     mobileNo: '9876500009',
+    frequency: 'Twice a week',
     devices: [
       {
         deviceId: 'PR_004',
@@ -281,6 +295,7 @@ export const users: User[] = [
     providerId: 'PRV_E',
     activity: 'Active',
     mobileNo: '9876500010',
+    frequency: 'Daily',
     devices: [
       {
         deviceId: 'PSR_004',
@@ -302,7 +317,8 @@ export const devices: Device[] = [
     status: 'active',
     allocation: 'allocated',
     allocatedTo: 'USR_A1',
-    lastUsedOn: '2024-03-14'
+    lastUsedOn: '2024-03-14',
+    providerAllocation: 'PRV_A'
   },
   {
     id: 'GR_002',
@@ -312,7 +328,8 @@ export const devices: Device[] = [
     status: 'active',
     allocation: 'allocated',
     allocatedTo: 'USR_A2',
-    lastUsedOn: '2024-03-14'
+    lastUsedOn: '2024-03-14',
+    providerAllocation: 'PRV_A'
   },
   {
     id: 'GR_003',
@@ -322,7 +339,8 @@ export const devices: Device[] = [
     status: 'active',
     allocation: 'allocated',
     allocatedTo: 'USR_B1',
-    lastUsedOn: '2024-03-14'
+    lastUsedOn: '2024-03-14',
+    providerAllocation: 'PRV_B'
   },
   {
     id: 'GR_004',
@@ -332,7 +350,8 @@ export const devices: Device[] = [
     status: 'active',
     allocation: 'allocated',
     allocatedTo: 'USR_B2',
-    lastUsedOn: '2024-03-14'
+    lastUsedOn: '2024-03-14',
+    providerAllocation: 'PRV_B'
   },
   {
     id: 'GR_005',
@@ -342,7 +361,8 @@ export const devices: Device[] = [
     status: 'active',
     allocation: 'allocated',
     allocatedTo: 'USR_C1',
-    lastUsedOn: '2024-03-14'
+    lastUsedOn: '2024-03-14',
+    providerAllocation: 'PRV_C'
   },
   {
     id: 'GR_006',
@@ -352,7 +372,8 @@ export const devices: Device[] = [
     status: 'inactive',
     allocation: 'not allocated',
     allocatedTo: undefined,
-    lastUsedOn: undefined
+    lastUsedOn: undefined,
+    providerAllocation: undefined
   },
   {
     id: 'GR_007',
@@ -362,7 +383,8 @@ export const devices: Device[] = [
     status: 'inactive',
     allocation: 'not allocated',
     allocatedTo: undefined,
-    lastUsedOn: undefined
+    lastUsedOn: undefined,
+    providerAllocation: undefined
   },
 
   // Pulse Regulators
@@ -374,7 +396,8 @@ export const devices: Device[] = [
     status: 'active',
     allocation: 'allocated',
     allocatedTo: 'USR_B1',
-    lastUsedOn: '2024-03-14'
+    lastUsedOn: '2024-03-14',
+    providerAllocation: 'PRV_B'
   },
   {
     id: 'PR_002',
@@ -384,7 +407,8 @@ export const devices: Device[] = [
     status: 'inactive',
     allocation: 'allocated',
     allocatedTo: 'USR_B3',
-    lastUsedOn: '2024-03-10'
+    lastUsedOn: '2024-03-10',
+    providerAllocation: 'PRV_B'
   },
   {
     id: 'PR_003',
@@ -394,7 +418,8 @@ export const devices: Device[] = [
     status: 'active',
     allocation: 'allocated',
     allocatedTo: 'USR_D1',
-    lastUsedOn: '2024-03-14'
+    lastUsedOn: '2024-03-14',
+    providerAllocation: 'PRV_D'
   },
   {
     id: 'PR_004',
@@ -404,7 +429,8 @@ export const devices: Device[] = [
     status: 'active',
     allocation: 'allocated',
     allocatedTo: 'USR_D2',
-    lastUsedOn: '2024-03-14'
+    lastUsedOn: '2024-03-14',
+    providerAllocation: 'PRV_D'
   },
   {
     id: 'PR_005',
@@ -414,7 +440,8 @@ export const devices: Device[] = [
     status: 'inactive',
     allocation: 'not allocated',
     allocatedTo: undefined,
-    lastUsedOn: undefined
+    lastUsedOn: undefined,
+    providerAllocation: undefined
   },
 
   // Pressure Regulators
@@ -426,7 +453,8 @@ export const devices: Device[] = [
     status: 'active',
     allocation: 'allocated',
     allocatedTo: 'USR_C1',
-    lastUsedOn: '2024-03-14'
+    lastUsedOn: '2024-03-14',
+    providerAllocation: 'PRV_C'
   },
   {
     id: 'PSR_002',
@@ -436,7 +464,8 @@ export const devices: Device[] = [
     status: 'active',
     allocation: 'allocated',
     allocatedTo: 'USR_C2',
-    lastUsedOn: '2024-03-13'
+    lastUsedOn: '2024-03-13',
+    providerAllocation: 'PRV_C'
   },
   {
     id: 'PSR_003',
@@ -446,7 +475,8 @@ export const devices: Device[] = [
     status: 'active',
     allocation: 'allocated',
     allocatedTo: 'USR_D2',
-    lastUsedOn: '2024-03-12'
+    lastUsedOn: '2024-03-12',
+    providerAllocation: 'PRV_D'
   },
   {
     id: 'PSR_004',
@@ -456,7 +486,8 @@ export const devices: Device[] = [
     status: 'active',
     allocation: 'allocated',
     allocatedTo: 'USR_E1',
-    lastUsedOn: '2024-03-13'
+    lastUsedOn: '2024-03-13',
+    providerAllocation: 'PRV_E'
   },
   {
     id: 'PSR_005',
@@ -466,7 +497,8 @@ export const devices: Device[] = [
     status: 'inactive',
     allocation: 'not allocated',
     allocatedTo: undefined,
-    lastUsedOn: undefined
+    lastUsedOn: undefined,
+    providerAllocation: undefined
   },
   {
     id: 'PSR_006',
@@ -476,7 +508,8 @@ export const devices: Device[] = [
     status: 'inactive',
     allocation: 'not allocated',
     allocatedTo: undefined,
-    lastUsedOn: undefined
+    lastUsedOn: undefined,
+    providerAllocation: undefined
   }
 ];
 
@@ -595,6 +628,80 @@ export const generateUsageStats = () => {
 
 export const usageStats = generateUsageStats();
 
+// Update localStorage initialization to include new fields
+export function initializeLocalStorage() {
+  // First check if localStorage already has the data
+  if (!localStorage.getItem('deviceTypes')) {
+    localStorage.setItem('deviceTypes', JSON.stringify(deviceTypes));
+  }
+  
+  // Update providers with new allocatedDevices field
+  const storedProviders = localStorage.getItem('providers');
+  if (storedProviders) {
+    try {
+      const parsedProviders = JSON.parse(storedProviders);
+      
+      // Map through providers in localStorage and add allocatedDevices if missing
+      const updatedProviders = parsedProviders.map((provider: Provider) => {
+        // Find matching provider in mock data
+        const mockProvider = providers.find(p => p.id === provider.id);
+        
+        // If provider exists in mock data, use its allocatedDevices, otherwise keep existing or empty array
+        return {
+          ...provider,
+          allocatedDevices: mockProvider?.allocatedDevices || provider.allocatedDevices || []
+        };
+      });
+      
+      localStorage.setItem('providers', JSON.stringify(updatedProviders));
+    } catch (error) {
+      console.error('Error updating providers in localStorage:', error);
+      localStorage.setItem('providers', JSON.stringify(providers));
+    }
+  } else {
+    localStorage.setItem('providers', JSON.stringify(providers));
+  }
+  
+  // Update devices with new providerAllocation field
+  const storedDevices = localStorage.getItem('devices');
+  if (storedDevices) {
+    try {
+      const parsedDevices = JSON.parse(storedDevices);
+      
+      // Map through devices in localStorage and add providerAllocation if missing
+      const updatedDevices = parsedDevices.map((device: Device) => {
+        // Find matching device in mock data
+        const mockDevice = devices.find(d => d.id === device.id);
+        
+        // If device exists in mock data, use its providerAllocation, otherwise keep existing or undefined
+        return {
+          ...device,
+          providerAllocation: mockDevice?.providerAllocation || device.providerAllocation
+        };
+      });
+      
+      localStorage.setItem('devices', JSON.stringify(updatedDevices));
+    } catch (error) {
+      console.error('Error updating devices in localStorage:', error);
+      localStorage.setItem('devices', JSON.stringify(devices));
+    }
+  } else {
+    localStorage.setItem('devices', JSON.stringify(devices));
+  }
+  
+  // Initialize other data if needed
+  if (!localStorage.getItem('users')) {
+    localStorage.setItem('users', JSON.stringify(users));
+  }
+  
+  if (!localStorage.getItem('deviceUsages')) {
+    localStorage.setItem('deviceUsages', JSON.stringify(deviceUsages));
+  }
+  
+  // Add the call to update mobile numbers
+  updateLocalStorageWithMobileNumbers();
+}
+
 // Add this function to initialize or update localStorage with the new mock data
 function updateLocalStorageWithMobileNumbers() {
   // First, check if localStorage already has data
@@ -604,9 +711,9 @@ function updateLocalStorageWithMobileNumbers() {
   // Update providers with mobile numbers
   if (existingProviders) {
     try {
-      const providers = JSON.parse(existingProviders);
+      const providersData = JSON.parse(existingProviders);
       // Add mobile numbers to existing providers
-      const updatedProviders = providers.map((provider: Provider, index: number) => ({
+      const updatedProviders = providersData.map((provider: Provider, index: number) => ({
         ...provider,
         mobileNo: provider.mobileNo || `987654321${index}` // Add mobile if not exists
       }));
@@ -624,9 +731,9 @@ function updateLocalStorageWithMobileNumbers() {
   // Update users with mobile numbers
   if (existingUsers) {
     try {
-      const users = JSON.parse(existingUsers);
+      const usersData = JSON.parse(existingUsers);
       // Add mobile numbers to existing users
-      const updatedUsers = users.map((user: User, index: number) => ({
+      const updatedUsers = usersData.map((user: User, index: number) => ({
         ...user,
         mobileNo: user.mobileNo || `987650000${index + 1}` // Add mobile if not exists
       }));
@@ -669,4 +776,8 @@ export function migrateParametersToArray() {
       localStorage.setItem('deviceTypes', JSON.stringify(deviceTypes));
     }
   }
-} 
+}
+
+// Call the initialization function when this module is imported
+// This ensures localStorage is updated with the new fields
+initializeLocalStorage(); 

@@ -21,7 +21,7 @@ import {
 import { Input } from "../../components/ui/input"
 import { RadioGroup, RadioGroupItem } from "../../components/ui/radio-group"
 import { Textarea } from "../../components/ui/textarea" 
-import {
+import { 
   User, 
   Phone, 
   Mail, 
@@ -49,6 +49,7 @@ const formSchema = z.object({
   email: z.string().email("Invalid email address").optional(),
   deviceTypeCode: z.string().optional(),
   deviceId: z.string().optional(),
+  frequency: z.enum(["Daily", "Twice a week", "Once a week"]).default("Daily"),
   remarks: z.string().optional(),
   activity: z.string().default("Active")
 });
@@ -89,6 +90,7 @@ const AddUser = () => {
       email: "",
       deviceTypeCode: undefined,
       deviceId: undefined,
+      frequency: "Daily",
       remarks: "",
       activity: "Active"
     },
@@ -165,11 +167,16 @@ const AddUser = () => {
       }
 
       const allDevices: Device[] = JSON.parse(devicesData);
-      // We want both inactive and not allocated devices
-      const availDevices = allDevices.filter(device => 
-        device.allocation === 'not allocated' ||
-        device.status === 'inactive'
-      );
+      
+      // Filter devices that are:
+      // 1. Allocated to this provider (providerAllocation matches providerId)
+      // 2. Either not allocated to any user OR inactive
+      const availDevices = allDevices.filter(device => {
+        const isAllocatedToProvider = device.providerAllocation === providerId;
+        const isAvailableForUser = device.allocation === 'not allocated' || device.status === 'inactive';
+        
+        return isAllocatedToProvider && isAvailableForUser;
+      });
       
       setAvailableDevices(availDevices);
       console.log("Available devices loaded:", availDevices);
@@ -234,7 +241,7 @@ const AddUser = () => {
       
       const selectedTypeCode = values.deviceTypeCode || '';
       
-      // Create new user object
+      // Create new user object with frequency field
       const newUser = {
         id: values.userId,
         name: values.userName,
@@ -244,6 +251,7 @@ const AddUser = () => {
         activity: values.activity,
         mobileNo: values.mobile,
         email: values.email || undefined,
+        frequency: values.frequency,
         devices: selectedDevice ? [
           {
             deviceId: selectedDevice.id,
@@ -300,7 +308,7 @@ const AddUser = () => {
       }
 
       toast.success('User registered successfully');
-      navigate('/provider');
+    navigate('/provider');
     } catch (error) {
       console.error('Error registering user:', error);
       toast.error('Failed to register user');
@@ -349,26 +357,26 @@ const AddUser = () => {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <label className="text-sm font-medium">Provider Name</label>
-                    <div className="relative">
-                      <User className="absolute left-2 top-2.5 h-5 w-5 text-gray-400" />
-                      <Input 
+                          <div className="relative">
+                            <User className="absolute left-2 top-2.5 h-5 w-5 text-gray-400" />
+                            <Input 
                         value={provider?.name || ""} 
-                        readOnly 
+                              readOnly 
                         className="pl-9 bg-muted"
-                      />
-                    </div>
+                            />
+                          </div>
                   </div>
 
                   <div className="space-y-2">
                     <label className="text-sm font-medium">Provider ID</label>
-                    <div className="relative">
-                      <CreditCard className="absolute left-2 top-2.5 h-5 w-5 text-gray-400" />
-                      <Input 
+                          <div className="relative">
+                            <CreditCard className="absolute left-2 top-2.5 h-5 w-5 text-gray-400" />
+                            <Input 
                         value={provider?.id || ""} 
-                        readOnly 
+                              readOnly 
                         className="pl-9 bg-muted"
-                      />
-                    </div>
+                            />
+                          </div>
                   </div>
                 </div>
 
@@ -376,25 +384,25 @@ const AddUser = () => {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <label className="text-sm font-medium">Mobile Number</label>
-                    <div className="relative">
-                      <Phone className="absolute left-2 top-2.5 h-5 w-5 text-gray-400" />
-                      <Input 
+                          <div className="relative">
+                            <Phone className="absolute left-2 top-2.5 h-5 w-5 text-gray-400" />
+                            <Input 
                         value={provider?.mobileNo || ""} 
-                        readOnly 
+                              readOnly 
                         className="pl-9 bg-muted"
-                      />
-                    </div>
+                            />
+                          </div>
                   </div>
 
                   <div className="space-y-2">
                     <label className="text-sm font-medium">Specialization</label>
-                    <div className="relative">
-                      <Input 
+                          <div className="relative">
+                            <Input 
                         value={provider?.specialistIn || ""} 
-                        readOnly 
+                              readOnly 
                         className="pl-3 bg-muted"
-                      />
-                    </div>
+                            />
+                          </div>
                   </div>
                 </div>
               </div>
@@ -493,13 +501,13 @@ const AddUser = () => {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Age</FormLabel>
-                        <FormControl>
+                            <FormControl>
                           <Input 
                             type="number" 
                             {...field}
                             onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
                           />
-                        </FormControl>
+                            </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -556,15 +564,16 @@ const AddUser = () => {
                 </div>
               </div>
 
+
               {/* Device Allocation Section */}
               <div className="p-6 space-y-6 rounded-lg bg-gray-50">
                 <h3 className="pl-3 text-lg font-semibold border-l-4 border-primary">Device Allocation</h3>
                 
                 {/* First select Device Type */}
-                <FormField
-                  control={form.control}
+                  <FormField
+                    control={form.control}
                   name="deviceTypeCode"
-                  render={({ field }) => (
+                    render={({ field }) => (
                     <FormItem>
                       <FormLabel>Device Type</FormLabel>
                       <Select 
@@ -573,11 +582,11 @@ const AddUser = () => {
                         }}
                         value={field.value}
                       >
-                        <FormControl>
+                            <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Select a device type" />
                           </SelectTrigger>
-                        </FormControl>
+                            </FormControl>
                         <SelectContent>
                           {provider?.deviceTypes.map(code => {
                             const deviceType = deviceTypes.find(dt => dt.code === code);
@@ -589,16 +598,16 @@ const AddUser = () => {
                           })}
                         </SelectContent>
                       </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
                 {/* Then select Device */}
-                <FormField
-                  control={form.control}
+                  <FormField
+                    control={form.control}
                   name="deviceId"
-                  render={({ field }) => (
+                    render={({ field }) => (
                     <FormItem>
                       <FormLabel>Allocate Device (Optional)</FormLabel>
                       <Select 
@@ -614,7 +623,7 @@ const AddUser = () => {
                           }
                         }}
                       >
-                        <FormControl>
+                            <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder={deviceTypeSelected ? "Select a device to allocate" : "Select device type first"} />
                           </SelectTrigger>
@@ -649,6 +658,32 @@ const AddUser = () => {
 
                 <FormField
                   control={form.control}
+                  name="frequency"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Usage Frequency</FormLabel>
+                      <Select 
+                        onValueChange={field.onChange}
+                        value={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select usage frequency" />
+                          </SelectTrigger>
+                            </FormControl>
+                        <SelectContent>
+                          <SelectItem value="Daily">Daily</SelectItem>
+                          <SelectItem value="Twice a week">Twice a week</SelectItem>
+                          <SelectItem value="Once a week">Once a week</SelectItem>
+                        </SelectContent>
+                      </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                <FormField
+                  control={form.control}
                   name="remarks"
                   render={({ field }) => (
                     <FormItem>
@@ -672,14 +707,14 @@ const AddUser = () => {
               {/* Button Section */}
               <div className="flex justify-center pt-6 space-x-4">
                 <Button 
-                  type="submit"
+                  type="submit" 
                   onClick={() => validateDeviceSelection()}
                 >
                   Register User
                 </Button>
                 <Button 
                   type="button" 
-                  variant="outline"
+                  variant="outline" 
                   onClick={() => navigate('/provider/upload')}
                 >
                   Add as Bulk

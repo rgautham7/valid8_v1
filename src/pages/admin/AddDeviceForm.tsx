@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { ArrowLeft, Loader2, Calendar } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
@@ -20,6 +20,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../../components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "../../components/ui/popover";
+import { Calendar as CalendarComponent } from "../../components/ui/calendar";
+import { format } from "date-fns";
 import Breadcrumb from '../../components/ui/breadcrumb';
 import { DeviceType, Device } from '../../types/index';
 import { getFromStorage, saveToStorage } from '../../utils/storageUtils';
@@ -33,8 +36,10 @@ const AddDeviceForm: React.FC = () => {
   // State
   const [deviceTypes, setDeviceTypes] = useState<DeviceType[]>([]);
   const [selectedDeviceTypeId, setSelectedDeviceTypeId] = useState<string>('');
-  const [yearOfManufacturing, setYearOfManufacturing] = useState<string>('');
-  const [validity, setValidity] = useState<string>('');
+  const [deviceTypeId, setDeviceTypeId] = useState<string>('');
+  const [deviceId, setDeviceId] = useState<string>('');
+  const [yearOfManufacturing, setYearOfManufacturing] = useState<Date | undefined>(undefined);
+  const [validity, setValidity] = useState<Date | undefined>(undefined);
   const [status, setStatus] = useState<'active' | 'inactive'>('active');
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -52,6 +57,11 @@ const AddDeviceForm: React.FC = () => {
         // If a device type ID was provided in the URL, preselect it
         if (preselectedDeviceTypeId) {
           setSelectedDeviceTypeId(preselectedDeviceTypeId);
+          const deviceType = deviceTypesData.find(dt => dt.id === preselectedDeviceTypeId);
+          if (deviceType) {
+            setDeviceTypeId(deviceType.id || '');
+            generateDeviceId(deviceType.code || '');
+          }
         }
       } catch (err) {
         console.error('Error loading device types:', err);
@@ -65,6 +75,44 @@ const AddDeviceForm: React.FC = () => {
     loadDeviceTypes();
   }, [preselectedDeviceTypeId]);
   
+  // Generate device ID based on the device type code
+  const generateDeviceId = (code: string) => {
+    try {
+      if (!code) return;
+      
+      // Generate prefix from device type code
+      const prefix = code.split('-').map(part => part.charAt(0).toUpperCase()).join('');
+      
+      // Get existing devices to determine the next ID number
+      const existingDevices = getFromStorage<Device[]>('devices', []);
+      const deviceTypeDevices = existingDevices.filter(d => {
+        const dt = deviceTypes.find(type => type.id === d.deviceTypeId);
+        return dt?.code === code;
+      });
+      
+      const nextNumber = deviceTypeDevices.length + 1;
+      const generatedId = `${prefix}_${nextNumber.toString().padStart(3, '0')}`;
+      
+      setDeviceId(generatedId);
+    } catch (err) {
+      console.error('Error generating device ID:', err);
+    }
+  };
+  
+  // Update deviceTypeCode and generate deviceId when selectedDeviceTypeId changes
+  useEffect(() => {
+    if (selectedDeviceTypeId) {
+      const deviceType = deviceTypes.find(dt => dt.id === selectedDeviceTypeId);
+      if (deviceType) {
+        setDeviceTypeId(deviceType.id || '');
+        generateDeviceId(deviceType.code || '');
+      }
+    } else {
+      setDeviceTypeId('');
+      setDeviceId('');
+    }
+  }, [selectedDeviceTypeId, deviceTypes]);
+  
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -74,40 +122,41 @@ const AddDeviceForm: React.FC = () => {
       return;
     }
     
+    if (!deviceId) {
+      toast.error('Device ID is required');
+      return;
+    }
+    
     if (!yearOfManufacturing) {
-      toast.error('Please enter year of manufacturing');
+      toast.error('Please select year of manufacturing');
       return;
     }
     
     if (!validity) {
-      toast.error('Please enter validity');
+      toast.error('Please select validity');
       return;
     }
     
     try {
-      // Generate a unique ID for the new device
-      const selectedDeviceType = deviceTypes.find(dt => dt.id === selectedDeviceTypeId);
+      // Check if the device ID already exists
+      const existingDevices = getFromStorage<Device[]>('devices', []);
+      const deviceExists = existingDevices.some(d => d.id === deviceId);
       
-      if (!selectedDeviceType) {
-        toast.error('Selected device type not found');
+      if (deviceExists) {
+        toast.error('A device with this ID already exists');
         return;
       }
       
-      // Generate device ID based on device type code
-      const prefix = selectedDeviceType.code.split('-').map(part => part.charAt(0).toUpperCase()).join('');
-      
-      // Get existing devices to determine the next ID number
-      const existingDevices = getFromStorage<Device[]>('devices', []);
-      const deviceTypeDevices = existingDevices.filter(d => d.deviceTypeId === selectedDeviceTypeId);
-      const nextNumber = deviceTypeDevices.length + 1;
-      const deviceId = `${prefix}_${nextNumber.toString().padStart(3, '0')}`;
+      // Format dates to YYYY-MM-DD string
+      const yearOfManufacturingStr = format(yearOfManufacturing, 'yyyy-MM-dd');
+      const validityStr = format(validity, 'yyyy-MM-dd');
       
       // Create new device
       const newDevice: Device = {
         id: deviceId,
         deviceTypeId: selectedDeviceTypeId,
-        yearOfManufacturing,
-        validity,
+        yearOfManufacturing: yearOfManufacturingStr,
+        validity: validityStr,
         status,
         allocation: 'not allocated',
         allocatedTo: undefined,
@@ -178,10 +227,12 @@ const AddDeviceForm: React.FC = () => {
           ) : (
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-2">
-                <Label htmlFor="deviceType">Device Type *</Label>
+                <Label htmlFor="deviceType">Device Type <span className="text-red-500">*</span></Label>
                 <Select 
                   value={selectedDeviceTypeId} 
-                  onValueChange={setSelectedDeviceTypeId}
+                  onValueChange={(value) => {
+                    setSelectedDeviceTypeId(value);
+                  }}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select a device type" />
@@ -208,31 +259,86 @@ const AddDeviceForm: React.FC = () => {
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="yearOfManufacturing">Year of Manufacturing *</Label>
+                <Label htmlFor="deviceTypeId">Device Type Id</Label>
                 <Input
-                  id="yearOfManufacturing"
+                  id="deviceTypeId"
                   type="text"
-                  value={yearOfManufacturing}
-                  onChange={(e) => setYearOfManufacturing(e.target.value)}
-                  placeholder="YYYY-MM-DD"
-                  required
+                  value={deviceTypeId}
+                  readOnly
+                  className="bg-gray-100"
                 />
+                <p className="text-xs text-gray-500">
+                  This ID is derived from the selected device type
+                </p>
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="validity">Validity *</Label>
+                <Label htmlFor="deviceId">Device ID <span className="text-red-500">*</span></Label>
                 <Input
-                  id="validity"
+                  id="deviceId"
                   type="text"
-                  value={validity}
-                  onChange={(e) => setValidity(e.target.value)}
-                  placeholder="YYYY-MM-DD"
+                  value={deviceId}
+                  onChange={(e) => setDeviceId(e.target.value)}
+                  placeholder="Enter device ID"
                   required
                 />
+                <p className="text-xs text-gray-500">
+                  Auto-generated ID that can be modified if needed
+                </p>
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="status">Status</Label>
+                <Label htmlFor="yearOfManufacturing">Year of Manufacturing <span className="text-red-500">*</span></Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={`w-full justify-start text-left font-normal ${
+                        !yearOfManufacturing && "text-muted-foreground"
+                      }`}
+                    >
+                      <Calendar className="w-4 h-4 mr-2" />
+                      {yearOfManufacturing ? format(yearOfManufacturing, "PPP") : "Select date"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0">
+                    <CalendarComponent
+                      mode="single"
+                      selected={yearOfManufacturing}
+                      onSelect={setYearOfManufacturing}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="validity">Validity <span className="text-red-500">*</span></Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={`w-full justify-start text-left font-normal ${
+                        !validity && "text-muted-foreground"
+                      }`}
+                    >
+                      <Calendar className="w-4 h-4 mr-2" />
+                      {validity ? format(validity, "PPP") : "Select date"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0">
+                    <CalendarComponent
+                      mode="single"
+                      selected={validity}
+                      onSelect={setValidity}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="status">Status <span className="text-red-500">*</span></Label>
                 <Select 
                   value={status} 
                   onValueChange={(value: 'active' | 'inactive') => setStatus(value)}
@@ -247,7 +353,7 @@ const AddDeviceForm: React.FC = () => {
                 </Select>
               </div>
               
-              <div className="flex justify-end space-x-2">
+              <div className="flex justify-end space-x-3">
                 <Button 
                   type="button" 
                   variant="outline" 
