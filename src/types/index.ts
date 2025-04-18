@@ -1,8 +1,8 @@
 // Define base interfaces
 export interface DeviceType {
   id: string;
-  name: string;  // 'Pressure Regulator' | 'Glucose Regulator' | 'Pulse Regulator'
-  code: string;  // 'pressure-regulator' | 'glucose-regulator' | 'pulse-regulator'
+  name: string;
+  code: string;
   image?: string;
   parameters?: string[];
   manufacturer?: string;
@@ -46,7 +46,7 @@ export interface Provider {
   deviceTypes: string[];
   usersCount: number;
   mobileNo: string;
-  allocatedDevices?: string[]; // New field: Array of device IDs allocated to this provider
+  allocatedDevices?: string[];
 }
 
 export interface Reading {
@@ -80,32 +80,29 @@ export interface Doctor extends Provider {
   };
 }
 
-// Add this interface for individual devices
 export interface Device {
   id: string;
-  deviceTypeId: string;  // References the parent DeviceType.id
+  deviceTypeId: string;
   yearOfManufacturing: string;
   validity: string;
   status: 'active' | 'inactive';
   allocation: 'allocated' | 'not allocated';
-  allocatedTo?: string;  // User ID if allocated
-  lastUsedOn?: string;   // Last usage timestamp
-  providerAllocation?: string; // New field: Provider ID this device is allocated to
+  allocatedTo?: string;
+  lastUsedOn?: string;
+  providerAllocation?: string;
 }
 
-// Add this new interface for device usage tracking
 export interface DeviceUsage {
-  id: string;           // Unique identifier for the usage record
-  userId: string;       // References User.id
-  deviceId: string;     // References Device.id
-  deviceType: string;   // References DeviceType.code
-  usageDate: string;    // ISO date string (YYYY-MM-DD)
-  usageTime: string;    // Time of usage (HH:MM)
-  timestamp: string;    // Full ISO timestamp
-  notes?: string;       // Optional notes about the usage
+  id: string;
+  userId: string;
+  deviceId: string;
+  deviceType: string;
+  usageDate: string;
+  usageTime: string;
+  timestamp: string;
+  notes?: string;
 }
 
-// Add this interface for aggregated usage statistics
 export interface UsageStats {
   userId: string;
   deviceId: string;
@@ -113,9 +110,9 @@ export interface UsageStats {
   totalUsages: number;
   lastUsed: string;
   usageByMonth: {
-    [key: string]: number; // Format: "YYYY-MM": count
+    [key: string]: number;
   };
   usageByDay: {
-    [key: string]: number; // Format: "YYYY-MM-DD": count
+    [key: string]: number;
   };
 }

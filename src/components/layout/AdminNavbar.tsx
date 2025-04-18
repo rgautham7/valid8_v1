@@ -1,11 +1,9 @@
-// src/components/layout/AdminNavbar.tsx
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   Database, 
   Users, 
-  Settings, 
   Menu, 
   LogOut
 } from 'lucide-react';
@@ -41,11 +39,6 @@ const AdminNavbar: React.FC = () => {
       href: '/admin/provider-management',
       icon: <Users className="w-5 h-5" />
     },
-    {
-      title: 'Settings',
-      href: '/admin/settings',
-      icon: <Settings className="w-5 h-5" />
-    }
   ];
   
   const isActive = (path: string) => {
@@ -69,7 +62,6 @@ const AdminNavbar: React.FC = () => {
           </Link>
         </div>
         
-        {/* Desktop Navigation */}
         <nav className="items-center hidden space-x-4 md:flex lg:space-x-6">
           {navItems.map((item) => (
             <Link
@@ -96,7 +88,6 @@ const AdminNavbar: React.FC = () => {
           </Button>
         </nav>
         
-        {/* Mobile Navigation */}
         <Sheet open={isOpen} onOpenChange={setIsOpen}>
           <SheetTrigger asChild className="md:hidden">
             <Button variant="ghost" size="icon">

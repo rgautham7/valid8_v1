@@ -28,7 +28,6 @@ import DeviceDetailsPage from './pages/user/DeviceDetailsPage';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import DeviceDetails from './pages/admin/DeviceDetails';
 import DeviceTypeProviderUsers from './pages/admin/DeviceTypeProviderUsers';
-import Settings from './pages/admin/Settings';
 import DeviceTypeManagement from './pages/admin/DeviceTypeManagement';
 import AddDeviceForm from './pages/admin/AddDeviceForm';
 import BulkUpload from './pages/admin/BulkUpload';
@@ -128,17 +127,6 @@ const App: React.FC = () => {
                 <>
                   <AdminNavbar />
                   <DeviceTypeProviderUsers />
-                </>
-              } 
-              allowedRoles={['admin']} 
-            />
-          } />
-          <Route path="/admin/settings" element={
-            <ProtectedRoute 
-              element={
-                <>
-                  <AdminNavbar />
-                  <Settings />
                 </>
               } 
               allowedRoles={['admin']} 

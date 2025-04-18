@@ -3,13 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { User, Device, DeviceType } from '../../types';
 import { 
-  Users, 
   UserPlus, 
   Cpu, 
   CheckCircle, 
   XCircle, 
   Search, 
-  Filter, 
   MoreVertical,
   Eye,
   UserCheck,
@@ -52,16 +50,13 @@ import {
   DialogTitle,
 } from '../../components/ui/dialog';
 
-// Custom Components
 import UserDetailsPopup from '../../components/provider/UserDetailsPopup';
-import DeviceAllocationPopup from '../../components/provider/DeviceAllocationPopup';
 import { toast } from 'react-hot-toast';
 
 export default function ProviderHome() {
   const navigate = useNavigate();
   const { providerData, isAuthenticated, userRole } = useAuth();
   
-  // State
   const [users, setUsers] = useState<User[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -76,8 +71,7 @@ export default function ProviderHome() {
     allocatedDevices: 0,
     availableDevices: 0
   });
-  
-  // UI State
+
   const [isLoading, setIsLoading] = useState(true);
   const [showUserDetails, setShowUserDetails] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
@@ -87,27 +81,23 @@ export default function ProviderHome() {
   const [deviceSearchTerm, setDeviceSearchTerm] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   
-  // Check authentication and redirect if needed
   useEffect(() => {
     if (!isAuthenticated || userRole !== 'provider') {
       navigate('/login/provider');
     }
   }, [isAuthenticated, userRole, navigate]);
   
-  // Load data
   useEffect(() => {
     if (providerData) {
       fetchData();
     }
   }, [providerData]);
   
-  // Filter users when search term or filter status changes
   useEffect(() => {
     if (!users.length) return;
 
     let filtered = [...users];
 
-    // Apply search filter
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
       filtered = filtered.filter(user => 
@@ -116,7 +106,6 @@ export default function ProviderHome() {
       );
     }
 
-    // Apply status filter
     if (filterStatus !== 'all') {
       filtered = filtered.filter(user => 
         user.activity.toLowerCase() === filterStatus
@@ -132,16 +121,13 @@ export default function ProviderHome() {
     setIsLoading(true);
     
     try {
-      // Load users from localStorage
       const usersData = localStorage.getItem('users');
       if (usersData) {
         const allUsers = JSON.parse(usersData);
-        // Filter users by provider ID
         const providerUsers = allUsers.filter((user: User) => user.providerId === providerData.id);
         setUsers(providerUsers);
         setFilteredUsers(providerUsers);
         
-        // Calculate user statistics
         const activeUsers = providerUsers.filter((user: User) => user.activity === 'Active').length;
         setStatistics(prev => ({
           ...prev,
@@ -151,34 +137,26 @@ export default function ProviderHome() {
         }));
       }
       
-      // Load device types from localStorage
       let providerDeviceTypes = [];
       const deviceTypesData = localStorage.getItem('deviceTypes');
       if (deviceTypesData) {
         const allDeviceTypes = JSON.parse(deviceTypesData);
-        // Filter device types by provider's allowed types
         providerDeviceTypes = allDeviceTypes.filter((type: DeviceType) => 
           providerData.deviceTypes.includes(type.code)
         );
         setDeviceTypes(providerDeviceTypes);
       }
       
-      // Load devices from localStorage
       const devicesData = localStorage.getItem('devices');
       if (devicesData && providerDeviceTypes.length > 0) {
         const allDevices = JSON.parse(devicesData);
-        
-        // Get device type IDs that this provider can manage
         const deviceTypeIds = providerDeviceTypes.map((type: DeviceType) => type.id);
         
-        // Filter devices by device type
         const providerDevices = allDevices.filter((device: Device) => 
           deviceTypeIds.includes(device.deviceTypeId)
         );
-        
         setDevices(providerDevices);
         
-        // Calculate device statistics
         const allocatedDevices = providerDevices.filter((device: Device) => device.allocation === 'allocated').length;
         setStatistics(prev => ({
           ...prev,
@@ -194,20 +172,17 @@ export default function ProviderHome() {
     }
   };
   
-  // Get device type name from code
   const getDeviceTypeName = (code: string) => {
     const deviceType = deviceTypes.find(type => type.code === code);
     return deviceType ? deviceType.name : code;
   };
-  
-  // Toggle user activity status
+
   const toggleUserActivity = async (user: User) => {
     setIsProcessing(true);
     
     try {
       const newActivity = user.activity === 'Active' ? 'Inactive' : 'Active';
       
-      // Update user in localStorage
       const usersData = localStorage.getItem('users');
       if (!usersData) {
         throw new Error('User data not available');
@@ -222,7 +197,6 @@ export default function ProviderHome() {
       
       localStorage.setItem('users', JSON.stringify(updatedUsers));
         
-        // Update local state
       setUsers(prev => 
         prev.map(u => 
           u.id === user.id 
@@ -240,13 +214,11 @@ export default function ProviderHome() {
     }
   };
 
-  // View user details
   const viewUserDetails = (user: User) => {
     setSelectedUser(user);
     setShowUserDetails(true);
   };
 
-  // Calculate statistics
   const calculateStatistics = () => {
     if (!users.length || !devices.length) return;
     
@@ -263,7 +235,6 @@ export default function ProviderHome() {
     });
   };
   
-  // Get device types with counts
   const getDeviceTypesWithCounts = () => {
     if (!deviceTypes.length || !devices.length) return [];
     
@@ -280,16 +251,13 @@ export default function ProviderHome() {
     });
   };
   
-  // Load available devices for allocation
   const loadAvailableDevices = (deviceTypeCode: string) => {
     setSelectedDeviceType(deviceTypeCode);
     
     try {
-      // Find the device type ID
       const deviceType = deviceTypes.find(type => type.code === deviceTypeCode);
       if (!deviceType) return;
       
-      // Filter available devices
       const availableDevs = devices.filter(device => 
         device.deviceTypeId === deviceType.id && 
         device.allocation === 'not allocated' &&
@@ -303,19 +271,15 @@ export default function ProviderHome() {
     }
   };
   
-  // Handle device allocation
   const handleAllocateDevice = async () => {
     if (!selectedUser || !selectedDeviceType) return;
     
     try {
-      // Get filtered available devices
       const filteredDevices = getFilteredAvailableDevices();
       if (!filteredDevices.length) return;
       
-      // Select the first available device
       const deviceToAllocate = filteredDevices[0];
       
-      // Update device in localStorage
       const devicesData = localStorage.getItem('devices');
       if (!devicesData) return;
       
@@ -334,17 +298,14 @@ export default function ProviderHome() {
       
       localStorage.setItem('devices', JSON.stringify(updatedDevices));
       
-      // Update user in localStorage
       const usersData = localStorage.getItem('users');
       if (!usersData) return;
       
       const allUsers = JSON.parse(usersData);
       const updatedUsers = allUsers.map((u: User) => {
         if (u.id === selectedUser.id) {
-          // Find device type
           const deviceType = deviceTypes.find(type => type.code === selectedDeviceType);
           
-          // Add device to user's devices
           const updatedDevices = [
             ...u.devices,
             {
@@ -365,7 +326,6 @@ export default function ProviderHome() {
       
       localStorage.setItem('users', JSON.stringify(updatedUsers));
       
-      // Update local state
       setDevices(prev => 
         prev.map(d => {
           if (d.id === deviceToAllocate.id) {
@@ -383,7 +343,6 @@ export default function ProviderHome() {
       setUsers(prev => 
         prev.map(u => {
           if (u.id === selectedUser.id) {
-            // Add device to user's devices
             const updatedDevices = [
               ...u.devices,
               {
@@ -403,15 +362,11 @@ export default function ProviderHome() {
         })
       );
       
-      // Recalculate statistics
       calculateStatistics();
-      
-      // Close dialog
       setShowDeviceAllocation(false);
       setSelectedDeviceType('');
       setDeviceSearchTerm('');
       
-      // Refresh user details if open
       if (showUserDetails) {
         const updatedUser = updatedUsers.find((u: User) => u.id === selectedUser.id);
         if (updatedUser) {
@@ -423,15 +378,12 @@ export default function ProviderHome() {
     }
   };
   
-  // Handle device removal
   const handleRemoveDevice = async () => {
     if (!selectedUser || !selectedUser.devices.length) return;
     
     try {
-      // Get the last device from the user
       const deviceToRemove = selectedUser.devices[selectedUser.devices.length - 1];
       
-      // Update device in localStorage
       const devicesData = localStorage.getItem('devices');
       if (!devicesData) return;
       
@@ -450,14 +402,12 @@ export default function ProviderHome() {
       
       localStorage.setItem('devices', JSON.stringify(updatedDevices));
       
-      // Update user in localStorage
       const usersData = localStorage.getItem('users');
       if (!usersData) return;
       
       const allUsers = JSON.parse(usersData);
       const updatedUsers = allUsers.map((u: User) => {
         if (u.id === selectedUser.id) {
-          // Remove device from user's devices
           const updatedDevices = u.devices.filter(d => d.deviceId !== deviceToRemove.deviceId);
           
           return {
@@ -470,7 +420,6 @@ export default function ProviderHome() {
       
       localStorage.setItem('users', JSON.stringify(updatedUsers));
       
-      // Update local state
       setDevices(prev => 
         prev.map(d => {
           if (d.id === deviceToRemove.deviceId) {
@@ -488,7 +437,6 @@ export default function ProviderHome() {
       setUsers(prev => 
         prev.map(u => {
           if (u.id === selectedUser.id) {
-            // Remove device from user's devices
             const updatedDevices = u.devices.filter(d => d.deviceId !== deviceToRemove.deviceId);
             
             return {
@@ -500,10 +448,8 @@ export default function ProviderHome() {
         })
       );
       
-      // Recalculate statistics
       calculateStatistics();
       
-      // Update selected user
       const updatedUser = updatedUsers.find((u: User) => u.id === selectedUser.id);
       if (updatedUser) {
         setSelectedUser(updatedUser);
@@ -513,7 +459,6 @@ export default function ProviderHome() {
     }
   };
   
-  // Filter available devices by search term
   const getFilteredAvailableDevices = () => {
     if (!availableDevices.length) return [];
     
@@ -557,9 +502,7 @@ export default function ProviderHome() {
         <p className="mt-2 text-gray-600">Welcome, {providerData.name}</p>
       </div>
       
-      {/* Statistics Cards */}
       <div className="grid gap-6 mb-8 md:grid-cols-2 lg:grid-cols-3">
-        {/* Users Card */}
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-lg">Users</CardTitle>
@@ -590,7 +533,6 @@ export default function ProviderHome() {
           </CardFooter>
         </Card>
         
-        {/* Devices Card */}
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-lg">Devices</CardTitle>
@@ -621,7 +563,6 @@ export default function ProviderHome() {
           </CardFooter>
         </Card>
         
-        {/* Device Types Card */}
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-lg">Device Types</CardTitle>
@@ -650,7 +591,6 @@ export default function ProviderHome() {
         </Card>
       </div>
       
-      {/* Users Section */}
       <div className="mb-8">
         <div className="flex flex-col items-start justify-between mb-4 space-y-4 md:flex-row md:items-center md:space-y-0">
           <h2 className="text-2xl font-bold">Users</h2>
@@ -667,7 +607,6 @@ export default function ProviderHome() {
               />
       </div>
             
-            {/* Filter */}
             <Select
               value={filterStatus}
               onValueChange={(value) => setFilterStatus(value as 'all' | 'active' | 'inactive')}
@@ -684,7 +623,6 @@ export default function ProviderHome() {
           </div>
         </div>
         
-          {/* Users Table */}
         <div className="overflow-hidden bg-white border rounded-lg">
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
@@ -800,7 +738,6 @@ export default function ProviderHome() {
         </div>
       </div>
       
-      {/* Device Types Section */}
                 <div>
         <h2 className="mb-4 text-2xl font-bold">Device Types</h2>
         
@@ -832,13 +769,11 @@ export default function ProviderHome() {
         </div>
       </div>
 
-      {/* User Details Popup */}
       {selectedUser && (
         <UserDetailsPopup
           isOpen={showUserDetails}
           onClose={() => {
             setShowUserDetails(false);
-            // Small delay to ensure state updates properly
             setTimeout(() => {
               setSelectedUser(null);
             }, 100);
@@ -846,18 +781,15 @@ export default function ProviderHome() {
           user={selectedUser}
           onAllocateDevice={(deviceType: string) => {
             loadAvailableDevices(deviceType);
-            setShowUserDetails(false); // Close the details popup when opening allocation popup
+            setShowUserDetails(false);
           }}
           onRemoveDevice={() => {
             handleRemoveDevice();
-            // Don't close the popup after removing a device
-            // so the user can see the updated device list
           }}
           getDeviceTypeName={getDeviceTypeName}
         />
       )}
-      
-      {/* Device Allocation Popup */}
+
       <Dialog open={showDeviceAllocation} onOpenChange={setShowDeviceAllocation}>
         <DialogContent>
           <DialogHeader>
@@ -920,7 +852,6 @@ export default function ProviderHome() {
   );
 }
 
-// Helper components
 const Label = ({ htmlFor, children }: { htmlFor: string, children: React.ReactNode }) => (
   <label htmlFor={htmlFor} className="block mb-2 text-sm font-medium text-gray-700">
     {children}

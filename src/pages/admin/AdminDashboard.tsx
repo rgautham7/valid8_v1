@@ -1,20 +1,15 @@
-// src/pages/admin/AdminDashboard.tsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  BarChart3, 
+import {
   Users, 
   Cpu, 
   CheckCircle, 
   XCircle,
   ArrowRight,
   Loader2,
-  Settings,
   Database
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-
-// UI Components
 import {
   Card,
   CardContent,
@@ -30,14 +25,9 @@ import {
   TabsList,
   TabsTrigger,
 } from "../../components/ui/tabs";
-
-// Utils
 import { getFromStorage } from '../../utils/storageUtils';
-
-// Types
 import { Device, DeviceType, Provider } from '../../types';
 
-// Stats interface
 interface DeviceStats {
   total: number;
   active: number;
@@ -55,13 +45,10 @@ interface DeviceTypeStats extends DeviceStats {
 const AdminDashboard: React.FC = () => {
   const navigate = useNavigate();
   const { isAuthenticated, userRole } = useAuth();
-  
-  // State for data
   const [deviceTypes, setDeviceTypes] = useState<DeviceType[]>([]);
   const [devices, setDevices] = useState<Device[]>([]);
   const [providers, setProviders] = useState<Provider[]>([]);
   
-  // State for statistics
   const [deviceStats, setDeviceStats] = useState<DeviceStats>({
     total: 0,
     active: 0,
@@ -71,32 +58,25 @@ const AdminDashboard: React.FC = () => {
   });
   
   const [deviceTypeStats, setDeviceTypeStats] = useState<DeviceTypeStats[]>([]);
-  
-  // State for loading
   const [isLoading, setIsLoading] = useState(true);
   
-  // Check authentication and redirect if needed
   useEffect(() => {
     if (!isAuthenticated || userRole !== 'admin') {
       navigate('/login/admin');
     }
   }, [isAuthenticated, userRole, navigate]);
   
-  // Load data from localStorage
   useEffect(() => {
     const loadData = () => {
       setIsLoading(true);
       
       try {
-        // Load device types
         const deviceTypesData = getFromStorage<DeviceType[]>('deviceTypes', []);
         setDeviceTypes(deviceTypesData);
         
-        // Load devices
         const devicesData = getFromStorage<Device[]>('devices', []);
         setDevices(devicesData);
         
-        // Load providers
         const providersData = getFromStorage<Provider[]>('providers', []);
         setProviders(providersData);
       } catch (error) {
@@ -109,7 +89,6 @@ const AdminDashboard: React.FC = () => {
     loadData();
   }, []);
 
-  // Calculate device statistics
   useEffect(() => {
     const calculateDeviceStats = () => {
       if (!devices || !deviceTypes) return;
@@ -126,7 +105,6 @@ const AdminDashboard: React.FC = () => {
         available: totalDevices - allocatedDevices
       });
       
-      // Calculate stats for each device type
       const typeStats: DeviceTypeStats[] = deviceTypes.map(deviceType => {
         const typeDevices = devices.filter(device => device.deviceTypeId === deviceType.id);
         const totalTypeDevices = typeDevices.length;
@@ -151,22 +129,14 @@ const AdminDashboard: React.FC = () => {
     calculateDeviceStats();
   }, [devices, deviceTypes]);
   
-  // Navigate to device management
   const handleManageDeviceTypes = () => {
     navigate('/admin/device-type-management');
   };
   
-  // Navigate to provider management
   const handleManageProviders = () => {
     navigate('/admin/provider-management');
   };
   
-  // Navigate to settings
-  const handleSettings = () => {
-    navigate('/admin/settings');
-  };
-  
-  // Navigate to specific device type management
   const handleViewDeviceType = (deviceTypeId: string) => {
     navigate(`/admin/device-management/${deviceTypeId}`);
   };
@@ -185,7 +155,6 @@ const AdminDashboard: React.FC = () => {
       <h1 className="mb-6 text-3xl font-bold">Admin Dashboard</h1>
       
       <div className="grid gap-4 mb-6 md:grid-cols-2 lg:grid-cols-4">
-        {/* Total Devices Card */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">
@@ -201,7 +170,6 @@ const AdminDashboard: React.FC = () => {
           </CardContent>
         </Card>
         
-        {/* Allocated Devices Card */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">
@@ -216,8 +184,7 @@ const AdminDashboard: React.FC = () => {
             </p>
           </CardContent>
         </Card>
-        
-        {/* Available Devices Card */}
+
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">
@@ -233,7 +200,6 @@ const AdminDashboard: React.FC = () => {
           </CardContent>
         </Card>
         
-        {/* Providers Card */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">
@@ -250,8 +216,7 @@ const AdminDashboard: React.FC = () => {
         </Card>
       </div>
       
-      <div className="grid gap-6 mb-6 md:grid-cols-2 lg:grid-cols-3">
-        {/* Device Type Management Card */}
+      <div className="grid gap-6 mb-6 md:grid-cols-2 lg:grid-cols-2">
         <Card>
           <CardHeader>
             <CardTitle>Device Type Management</CardTitle>
@@ -272,7 +237,6 @@ const AdminDashboard: React.FC = () => {
           </CardFooter>
         </Card>
         
-        {/* Provider Management Card */}
         <Card>
           <CardHeader>
             <CardTitle>Provider Management</CardTitle>
@@ -289,27 +253,6 @@ const AdminDashboard: React.FC = () => {
             <Button onClick={handleManageProviders} className="w-full">
               <Users className="w-4 h-4 mr-2" />
               Manage Providers
-            </Button>
-          </CardFooter>
-        </Card>
-        
-        {/* Settings Card */}
-        <Card>
-          <CardHeader>
-            <CardTitle>System Settings</CardTitle>
-            <CardDescription>
-              Configure system settings
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="mb-4 text-sm text-muted-foreground">
-              Configure global settings for the application.
-            </p>
-          </CardContent>
-          <CardFooter>
-            <Button onClick={handleSettings} className="w-full">
-              <Settings className="w-4 h-4 mr-2" />
-              Settings
             </Button>
           </CardFooter>
         </Card>

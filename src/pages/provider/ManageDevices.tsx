@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { 
-  Search, Filter, Loader2, AlertCircle, 
-  CheckCircle, XCircle, ArrowLeft, ArrowRight, Info
+  Search, Loader2, AlertCircle, 
+  CheckCircle, XCircle, Info
 } from 'lucide-react';
 
 // UI Components
@@ -13,7 +13,6 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-  CardFooter,
 } from "../../components/ui/card";
 import {
   Table,
@@ -48,13 +47,10 @@ import {
   DialogTitle,
 } from "../../components/ui/dialog";
 
-// Auth Context
 import { useAuth } from '../../context/AuthContext';
 
-// Types
 import { Provider, Device, DeviceType, User } from '../../types';
 
-// Device type statistics interface
 interface DeviceTypeStats {
   code: string;
   name: string;
@@ -65,14 +61,12 @@ interface DeviceTypeStats {
   available: number;
 }
 
-// Add these imports at the top of the file
 import DeviceTypeGrid from '../../components/provider/DeviceTypeGrid';
 
 export default function ManageDevices() {
   const { providerId } = useAuth();
   const navigate = useNavigate();
   
-  // State
   const [provider, setProvider] = useState<Provider | null>(null);
   const [deviceTypes, setDeviceTypes] = useState<DeviceType[]>([]);
   const [devices, setDevices] = useState<Device[]>([]);
@@ -80,14 +74,12 @@ export default function ManageDevices() {
   const [deviceTypeStats, setDeviceTypeStats] = useState<DeviceTypeStats[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
-  // Device list dialog
   const [selectedDeviceType, setSelectedDeviceType] = useState<string>('');
   const [isDeviceListOpen, setIsDeviceListOpen] = useState(false);
   const [filteredDevices, setFilteredDevices] = useState<Device[]>([]);
   const [deviceSearchTerm, setDeviceSearchTerm] = useState('');
   const [allocationFilter, setAllocationFilter] = useState<'all' | 'allocated' | 'available'>('all');
   
-  // Load provider, device types, and devices
   useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true);
@@ -205,9 +197,6 @@ export default function ManageDevices() {
       return dt?.code === deviceTypeCode;
     });
     
-    // Filter to only show devices that are:
-    // 1. Allocated to this provider (from the providerAllocation field)
-    // 2. Either not allocated to any user OR allocated to users of this provider
     const providerDevices = typeDevices.filter(device => {
       // Must be allocated to this provider
       if (device.providerAllocation !== providerId) {
@@ -393,7 +382,6 @@ export default function ManageDevices() {
         </TabsContent>
       </Tabs>
       
-      {/* Device List Dialog */}
       <Dialog open={isDeviceListOpen} onOpenChange={setIsDeviceListOpen}>
         <DialogContent className="max-w-4xl">
           <DialogHeader>

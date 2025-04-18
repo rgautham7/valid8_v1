@@ -277,8 +277,8 @@ const AddUser = () => {
             if (device.id === selectedDevice.id) {
               return {
                 ...device,
-                status: 'active', // Set status to active
-                allocation: 'allocated', // Set allocation to allocated
+                status: 'active',
+                allocation: 'allocated',
                 allocatedTo: values.userId,
                 lastUsedOn: new Date().toISOString().split('T')[0]
               };
@@ -349,11 +349,9 @@ const AddUser = () => {
         <CardContent className="pt-6">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-              {/* Provider Details Section */}
               <div className="p-6 space-y-6 rounded-lg bg-gray-50">
                 <h3 className="pl-3 text-lg font-semibold border-l-4 border-primary">Provider Details</h3>
                 
-                {/* Provider Name and ID Row */}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <label className="text-sm font-medium">Provider Name</label>
@@ -380,7 +378,6 @@ const AddUser = () => {
                   </div>
                 </div>
 
-                {/* Provider Mobile and Specialist Row */}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <label className="text-sm font-medium">Mobile Number</label>
@@ -407,11 +404,9 @@ const AddUser = () => {
                 </div>
               </div>
 
-              {/* User Details Section */}
               <div className="p-6 space-y-6 rounded-lg bg-gray-50">
                 <h3 className="pl-3 text-lg font-semibold border-l-4 border-primary">User Details</h3>
                 
-                {/* Username and User ID Row */}
                 <div className="grid grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
@@ -456,7 +451,6 @@ const AddUser = () => {
                   />
                 </div>
 
-                {/* Gender and Age Row */}
                 <div className="grid grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
@@ -515,7 +509,6 @@ const AddUser = () => {
                 </div>
               </div>
 
-              {/* Contact Details Section */}
               <div className="p-6 space-y-6 rounded-lg bg-gray-50">
                 <h3 className="pl-3 text-lg font-semibold border-l-4 border-primary">Contact Details</h3>
                 <div className="grid grid-cols-2 gap-4">
@@ -564,12 +557,9 @@ const AddUser = () => {
                 </div>
               </div>
 
-
-              {/* Device Allocation Section */}
               <div className="p-6 space-y-6 rounded-lg bg-gray-50">
                 <h3 className="pl-3 text-lg font-semibold border-l-4 border-primary">Device Allocation</h3>
                 
-                {/* First select Device Type */}
                   <FormField
                     control={form.control}
                   name="deviceTypeCode"
@@ -603,7 +593,6 @@ const AddUser = () => {
                     )}
                   />
 
-                {/* Then select Device */}
                   <FormField
                     control={form.control}
                   name="deviceId"
@@ -704,7 +693,6 @@ const AddUser = () => {
                 />
               </div>
 
-              {/* Button Section */}
               <div className="flex justify-center pt-6 space-x-4">
                 <Button 
                   type="submit" 
